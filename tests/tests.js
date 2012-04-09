@@ -11,11 +11,26 @@ var loadBuffer = function (file, fn) {
   xhr.send();
 };
 
+var withMessage = function (message) {
+  return function (error) {
+    return error.message === message;
+  };
+};
+
 asyncTest("throws on invalid file header ID", function () {
   loadBuffer("corrupt-id.jbig2", function (buffer) {
     raises(function () {
       JBIG2.parse(buffer);
-    });
+    }, withMessage("Control header check has failed"));
+    start();
+  });
+});
+
+asyncTest("throws on non-zero reserved bits in file header flags", function () {
+  loadBuffer("non-zero-reserved-bit.jbig2", function (buffer) {
+    raises(function () {
+      JBIG2.parse(buffer);
+    }, withMessage("Reserved bits (2-7) of file header flags are not zero"));
     start();
   });
 });
