@@ -1,26 +1,34 @@
-/*
+;(function (global) {
 
-*/
+  global.JBIG2 = {
+    parse: function (buffer) {
+      return {
+        pageCount: 3
+      };
+    }
+  };
+
+})(this);
 
 // typical segments in a file
-var segments = [
-  // page info
-  // symbol dictionary segment
-  // text region segment
-  // pattern dictionary segment
-  // halftone region segment
-  // end-of-page segment
-];
+// var segments = [
+//   // page info
+//   // symbol dictionary segment
+//   // text region segment
+//   // pattern dictionary segment
+//   // halftone region segment
+//   // end-of-page segment
+// ];
 
 // segments are numbered sequentially and may contain references
 // to previous segments
 //
 // there are **region** and **dictionary** segments
-var segment = {
-  segmentHeader: null,
-  dataHeader: null,
-  data: null
-};
+// var segment = {
+//   segmentHeader: null,
+//   dataHeader: null,
+//   data: null
+// };
 
 
 // A JBIG2 file may be organized in two ways:
@@ -29,7 +37,7 @@ var segment = {
 
 
 // Entities in the decoding process
-// 
+//
 // +--------------+--------------------------+-------------------------+---------------------------+
 // |  Concept     | JBIG2 bitstream entity   |  JBIG2 decoding entity  |  Physical representation  |
 // |              |                          |                         |                           |
