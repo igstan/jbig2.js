@@ -1,8 +1,8 @@
 "use strict";
 
-var loadBuffer = function (fn) {
+var loadBuffer = function (file, fn) {
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "annex-h.jbig2");
+  xhr.open("GET", file);
   xhr.responseType = "arraybuffer";
   xhr.onload = function (event) {
     var buffer = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
@@ -11,8 +11,17 @@ var loadBuffer = function (fn) {
   xhr.send();
 };
 
+asyncTest("throws on invalid file header ID", function () {
+  loadBuffer("corrupt-id.jbig2", function (buffer) {
+    raises(function () {
+      JBIG2.parse(buffer);
+    });
+    start();
+  });
+});
+
 asyncTest("parses correct file organization", function () {
-  loadBuffer(function (buffer) {
+  loadBuffer("annex-h.jbig2", function (buffer) {
     var decoded = JBIG2.parse(buffer);
     equal(decoded.sequential, true);
     equal(decoded.fileOrganization, JBIG2.SEQUENTIAL);
@@ -21,7 +30,7 @@ asyncTest("parses correct file organization", function () {
 });
 
 asyncTest("parses correct number of pages", function () {
-  loadBuffer(function (buffer) {
+  loadBuffer("annex-h.jbig2", function (buffer) {
     var decoded = JBIG2.parse(buffer);
     equal(decoded.pageCount, 3);
     start();
