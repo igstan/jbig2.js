@@ -5,10 +5,6 @@
   var RANDOM_ACCESS = "RANDOM_ACCESS";
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
-  var int32 = function (number) {
-    return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
-  };
-
   var parseHeaderFlags = function (octet, decoded) {
     if ((octet & 0xfc) != 0) {
       throw new Error("Reserved bits (2-7) of file header flags are not zero");
@@ -23,16 +19,16 @@
 
   var decodeHeader = function (decoded, buffer) {
     controlHeader.forEach(function (n, i) {
-      if (buffer[i] !== n) {
+      if (buffer.readByte() !== n) {
         throw new Error("Control header check has failed");
       }
     });
 
-    var headerFlags = buffer[8];
+    var headerFlags = buffer.readByte();
     decoded = parseHeaderFlags(headerFlags, decoded);
 
     if (decoded.knownPageCount) {
-      decoded.pageCount = int32(buffer.subarray(9, 13));
+      decoded.pageCount = buffer.readInt32();
     }
 
     return decoded;
@@ -58,12 +54,30 @@
   //
   var decodeFirstSegment = function (decoded, buffer) {
     var segment = {};
-    var start   = decoded.knownPageCount ? 14 : 9;
 
-    segment.number = int32(buffer.subarray(start, start + 4));
-    segment.flags  = decodeSegmentHeaderFlags(buffer.subarray(start + 5, 1));
+    segment.number = buffer.readInt32();
+    segment.flags  = decodeSegmentHeaderFlags(buffer.readByte());
+  };
 
-    console.log(segment);
+  var streamFrom = function (buffer) {
+    var pointer = 0;
+
+    return {
+      readByte: function () {
+        return buffer[pointer++];
+      },
+
+      readBytes: function (n) {
+        var bytes = buffer.subarray(pointer, pointer + n);
+        pointer += n;
+        return bytes;
+      },
+
+      readInt32: function () {
+        var number = this.readBytes(4);
+        return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
+      }
+    };
   };
 
   global.JBIG2 = {
@@ -71,10 +85,11 @@
     RANDOM_ACCESS: RANDOM_ACCESS,
 
     parse: function (buffer) {
+      var stream  = streamFrom(buffer);
       var decoded = {};
 
-      decodeHeader(decoded, buffer);
-      decodeFirstSegment(decoded, buffer);
+      decodeHeader(decoded, stream);
+      decodeFirstSegment(decoded, stream);
 
       return decoded;
     }
