@@ -21,14 +21,13 @@
     return fileHeaderFlags;
   };
 
-  var decodeHeader = function (buffer) {
+  var decodeHeader = function (fileHeaderFlags, buffer) {
     controlHeader.forEach(function (n, i) {
       if (buffer[i] !== n) {
         throw new Error("Control header check has failed");
       }
     });
 
-    var fileHeaderFlags = {};
     var headerFlags = buffer[8];
     fileHeaderFlags = parseHeaderFlags(headerFlags, fileHeaderFlags);
 
@@ -44,7 +43,11 @@
     RANDOM_ACCESS: RANDOM_ACCESS,
 
     parse: function (buffer) {
-      return decodeHeader(buffer);
+      var fileHeaderFlags = {};
+      
+      decodeHeader(fileHeaderFlags, buffer);
+
+      return fileHeaderFlags;
     }
   };
 
