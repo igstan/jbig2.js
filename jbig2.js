@@ -9,19 +9,19 @@
     return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
   };
 
-  var parseHeaderFlags = function (octet, fileHeaderFlags) {
+  var parseHeaderFlags = function (octet, decoded) {
     if ((octet & 0xfc) != 0) {
       throw new Error("Reserved bits (2-7) of file header flags are not zero");
     }
 
-    fileHeaderFlags.sequential       = (octet & 1) === 1;
-    fileHeaderFlags.fileOrganization = (octet & 1) === 1 ? SEQUENTIAL : RANDOM_ACCESS;
-    fileHeaderFlags.knownPageCount   = (octet & 2) === 0;
+    decoded.sequential       = (octet & 1) === 1;
+    decoded.fileOrganization = (octet & 1) === 1 ? SEQUENTIAL : RANDOM_ACCESS;
+    decoded.knownPageCount   = (octet & 2) === 0;
 
-    return fileHeaderFlags;
+    return decoded;
   };
 
-  var decodeHeader = function (fileHeaderFlags, buffer) {
+  var decodeHeader = function (decoded, buffer) {
     controlHeader.forEach(function (n, i) {
       if (buffer[i] !== n) {
         throw new Error("Control header check has failed");
@@ -29,13 +29,41 @@
     });
 
     var headerFlags = buffer[8];
-    fileHeaderFlags = parseHeaderFlags(headerFlags, fileHeaderFlags);
+    decoded = parseHeaderFlags(headerFlags, decoded);
 
-    if (fileHeaderFlags.knownPageCount) {
-      fileHeaderFlags.pageCount = int32(buffer.subarray(9, 13));
+    if (decoded.knownPageCount) {
+      decoded.pageCount = int32(buffer.subarray(9, 13));
     }
 
-    return fileHeaderFlags;
+    return decoded;
+  };
+
+  var decodeSegmentHeaderFlags = function (flags) {
+    return {
+      deferredNonRetain:   flags & 0x80 === 0x80, // 1000 0000
+      pageAssociationSize: flags & 0x40 === 0x40, // 0100 0000
+      segmentType:         flags & 0x3F === 0x3F  // 0011 1111
+    };
+  };
+
+  // A segment has two parts: a segment header part and a segment data part.
+  //
+  // A segment header contains the following fields:
+  //  - segment number
+  //  - segment header flags
+  //  - referred-to segment count and retention flags
+  //  - referred-to segment numbers
+  //  - segment page association
+  //  - segment data length
+  //
+  var decodeFirstSegment = function (decoded, buffer) {
+    var segment = {};
+    var start   = decoded.knownPageCount ? 14 : 9;
+
+    segment.number = int32(buffer.subarray(start, start + 4));
+    segment.flags  = decodeSegmentHeaderFlags(buffer.subarray(start + 5, 1));
+
+    console.log(segment);
   };
 
   global.JBIG2 = {
@@ -43,11 +71,12 @@
     RANDOM_ACCESS: RANDOM_ACCESS,
 
     parse: function (buffer) {
-      var fileHeaderFlags = {};
-      
-      decodeHeader(fileHeaderFlags, buffer);
+      var decoded = {};
 
-      return fileHeaderFlags;
+      decodeHeader(decoded, buffer);
+      decodeFirstSegment(decoded, buffer);
+
+      return decoded;
     }
   };
 
