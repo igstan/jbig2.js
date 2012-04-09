@@ -14,9 +14,9 @@
       throw new Error("Reserved bits (2-7) of file header flags are not zero");
     }
 
-    fileHeaderFlags.sequential         = (octet & 1) === 1;
-    fileHeaderFlags.fileOrganization   = (octet & 1) === 1 ? SEQUENTIAL : RANDOM_ACCESS;
-    fileHeaderFlags.unknownPageNumbers = (octet & 2) === 1;
+    fileHeaderFlags.sequential       = (octet & 1) === 1;
+    fileHeaderFlags.fileOrganization = (octet & 1) === 1 ? SEQUENTIAL : RANDOM_ACCESS;
+    fileHeaderFlags.knownPageCount   = (octet & 2) === 0;
 
     return fileHeaderFlags;
   };
@@ -32,7 +32,7 @@
     var headerFlags = buffer[8];
     fileHeaderFlags = parseHeaderFlags(headerFlags, fileHeaderFlags);
 
-    if (!fileHeaderFlags.unknownPageNumbers) {
+    if (fileHeaderFlags.knownPageCount) {
       fileHeaderFlags.pageCount = int32(buffer.subarray(9, 13));
     }
 
