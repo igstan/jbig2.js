@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<title>JBIG2</title>
+<style type="text/css">
+
+</style>
+<script>
+var fileHeaderFlags = {
+  sequential: null,
+  unknownPageNumbers: null,
+  pageNo: null
+};
+
+var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
+
+var parseHeaderFlags = function (octet) {
+  if ((octet & 0xfc) != 0) {
+    throw new Error("Reserved bits (2-7) of file header flags are not zero");
+  }
+
+  fileHeaderFlags.sequential         = (octet & 1) === 1;
+  fileHeaderFlags.unknownPageNumbers = (octet & 2) === 1;
+};
+
+var int32 = function (number) {
+  return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
+};
+
+var decodeHeader = function (buffer) {
+  controlHeader.forEach(function (n, i) {
+    if (buffer[i] !== n) {
+      throw new Error("Control header check has failed");
+    }
+  });
+
+  var headerFlags = buffer[8];
+
+  parseHeaderFlags(headerFlags);
+
+  if (!fileHeaderFlags.unknownPageNumbers) {
+    console.log(buffer.subarray(9, 13));
+    fileHeaderFlags.pageNo = int32(buffer.subarray(9, 13));
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function (event) {
+  var path = "annex-h.jbig2";
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", path, true);
+  xhr.responseType = "arraybuffer";
+  xhr.onload = function () {
+    // TODO catch parse error
+    var file = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
+
+    decodeHeader(file);
+
+    console.log(fileHeaderFlags);
+
+    var str = "";
+
+    for (var i=0, max=file.length; i<max; i++) {
+      str += " 0x" + file[i].toString(16).toUpperCase();
+    }
+
+    console.log(str.trim());
+
+  };
+  xhr.send(null);
+});
+</script>
+</head>
+<body>
+
+
+
+</body>
+</html>
