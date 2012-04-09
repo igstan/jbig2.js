@@ -31,7 +31,6 @@
     fileHeaderFlags = parseHeaderFlags(headerFlags, fileHeaderFlags);
 
     if (!fileHeaderFlags.unknownPageNumbers) {
-      console.log(buffer.subarray(9, 13));
       fileHeaderFlags.pageCount = int32(buffer.subarray(9, 13));
     }
 
