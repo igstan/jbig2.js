@@ -1,5 +1,6 @@
 ;(function (global) {
-
+  var SEQUENTIAL    = "SEQUENTIAL";
+  var RANDOM_ACCESS = "RANDOM_ACCESS";
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
   var int32 = function (number) {
@@ -12,6 +13,7 @@
     }
 
     fileHeaderFlags.sequential         = (octet & 1) === 1;
+    fileHeaderFlags.fileOrganization   = (octet & 1) === 1 ? SEQUENTIAL : RANDOM_ACCESS;
     fileHeaderFlags.unknownPageNumbers = (octet & 2) === 1;
 
     return fileHeaderFlags;
@@ -37,6 +39,9 @@
   };
 
   global.JBIG2 = {
+    SEQUENTIAL: SEQUENTIAL,
+    RANDOM_ACCESS: RANDOM_ACCESS,
+
     parse: function (buffer) {
       return decodeHeader(buffer);
     }

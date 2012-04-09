@@ -11,10 +11,19 @@ var loadBuffer = function (fn) {
   xhr.send();
 };
 
+asyncTest("parses correct file organization", function () {
+  loadBuffer(function (buffer) {
+    var decoded = JBIG2.parse(buffer);
+    equal(decoded.sequential, true);
+    equal(decoded.fileOrganization, JBIG2.SEQUENTIAL);
+    start();
+  });
+});
+
 asyncTest("parses correct number of pages", function () {
   loadBuffer(function (buffer) {
     var decoded = JBIG2.parse(buffer);
     equal(decoded.pageCount, 3);
-    start();    
+    start();
   });
 });
