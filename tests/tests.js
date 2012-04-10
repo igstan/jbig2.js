@@ -53,7 +53,13 @@ asyncTest("parses correct number of pages", function () {
 });
 
 test("segment header parsing", function () {
-  var buffer = JBIG2.streamFrom(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x18]));
+  var buffer = JBIG2.streamFrom(new Uint8Array([
+    0x00, 0x00, 0x00, 0x00, // segment number
+    0x00,                   // header flags
+    0x01,                   // referred-to segment count and retention flags
+    0x00,                   // page association size
+    0x00, 0x00, 0x00, 0x18  // segment data length
+  ]));
   var header = JBIG2.parseSegmentHeader(buffer);
 
   console.log(header);
