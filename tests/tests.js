@@ -70,4 +70,5 @@ test("segment header parsing", function () {
   equal(header.flags.deferredNonRetain, false);
   equal(header.refSegmentCountAndRetentionFlags.refSegmentCount, 0);
   equal(header.refSegmentCountAndRetentionFlags.retentionFlags, 1);
+  equal(header.pageAssociation, 0);
 });
