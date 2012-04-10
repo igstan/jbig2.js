@@ -38,11 +38,35 @@
     return decoded;
   };
 
+  var segmentTypes = {
+    SYMBOL_DICTIONARY                            : 0,
+    INTERMEDIATE_TEXT_REGION                     : 4,
+    IMMEDIATE_TEXT_REGION                        : 6,
+    IMMEDIATE_LOSSLESS_TEXT_REGION               : 7,
+    PATTERN_DICTIONARY                           : 16,
+    INTERMEDIATE_HALFTONE_REGION                 : 20,
+    IMMEDIATE_HALFTONE_REGION                    : 22,
+    IMMEDIATE_LOSSLESS_HALFTONE_REGION           : 23,
+    INTERMEDIATE_GENERIC_REGION                  : 36,
+    IMMEDIATE_GENERIC_REGION                     : 38,
+    IMMEDIATE_LOSSLESS_GENERIC_REGION            : 39,
+    INTERMEDIATE_GENERIC_REFINEMENT_REGION       : 40,
+    IMMEDIATE_GENERIC_REFINEMENT_REGION          : 42,
+    IMMEDIATE_LOSSLESS_GENERIC_REFINEMENT_REGION : 43,
+    PAGE_INFORMATION                             : 48,
+    END_OF_PAGE                                  : 49,
+    END_OF_STRIPE                                : 50,
+    END_OF_FILE                                  : 51,
+    PROFILES                                     : 52,
+    TABLES                                       : 53,
+    EXTENSION                                    : 62
+  };
+
   var decodeSegmentHeaderFlags = function (flags) {
     return {
-      deferredNonRetain:   flags & 0x80 === 0x80, // 1000 0000
-      pageAssociationSize: flags & 0x40 === 0x40, // 0100 0000
-      segmentType:         flags & 0x3F === 0x3F  // 0011 1111
+      deferredNonRetain:          flags & 0x80 === 0x80,            // 1000 0000
+      pageAssociationSizeInBytes: flags & 0x40 === 0x40 ? 4 : 1,    // 0100 0000
+      segmentType:                flags & 0x3F                      // 0011 1111
     };
   };
 
@@ -129,6 +153,7 @@
 
     streamFrom: streamFrom,
     parseSegmentHeader: decodeFirstSegment,
+    segmentTypes: segmentTypes,
 
     parse: function (buffer) {
       var stream  = streamFrom(buffer);

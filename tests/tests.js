@@ -56,6 +56,9 @@ test("segment header parsing", function () {
   var buffer = JBIG2.streamFrom(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x18]));
   var header = JBIG2.parseSegmentHeader(buffer);
 
+  console.log(header);
+
   equal(header.number, 0);
-  equal(header.flags.segmentType, 0);
+  equal(header.flags.segmentType, JBIG2.segmentTypes.SYMBOL_DICTIONARY);
+  equal(header.flags.pageAssociationSizeInBytes, 1);
 });
