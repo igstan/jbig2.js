@@ -51,3 +51,10 @@ asyncTest("parses correct number of pages", function () {
     start();
   });
 });
+
+test("segment header parsing", function () {
+  var buffer = JBIG2.streamFrom(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x18]));
+  var header = JBIG2.parseSegmentHeader(buffer);
+
+  equal(header.number, 0);
+});

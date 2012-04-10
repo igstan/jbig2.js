@@ -5,6 +5,10 @@
   var RANDOM_ACCESS = "RANDOM_ACCESS";
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
+  var int32 = function (number) {
+    return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
+  };
+
   var parseHeaderFlags = function (octet, decoded) {
     if ((octet & 0xfc) != 0) {
       throw new Error("Reserved bits (2-7) of file header flags are not zero");
@@ -42,6 +46,43 @@
     };
   };
 
+  var decodeRefSegmentCountAndRetentionFlags = function (buffer) {
+    var retentionFlags;
+    var octet = buffer.readByte();
+
+    console.log(octet);
+
+    var refSegmentCount = (octet & 0xE0) >> 5;
+
+    if (refSegmentCount <= 4) {
+      retentionFlags = octet;
+    } else if (refSegmentCount === 7) {
+      var longFormCountAndFlags = new Uint8Array([
+        (octet ^ 0xe0),    // bits 0-4, i.e. we drop the refSegmentCount
+        buffer.readByte(),
+        buffer.readByte(),
+        buffer.readByte()
+      ]);
+
+      refSegmentCount = int32(longFormCountAndFlags);
+
+      // see section 7.2.4 of the specs
+      var bytesToRead = 4 + Math.ceil((refSegmentCount + 1) / 8);
+      var noOfRententionFlagBytes = bytesToRead - 4;
+      retentionFlags = buffer.readBytes(noOfRententionFlagBytes);
+
+    } else {
+      throw new Error(
+        'Invalid value for the "count of referred-to segments" in the ' +
+        '3-bit subfield. It must be either 4 or 7, but got: ' + refSegmentCount
+      );
+    }
+
+    console.log(retentionFlags);
+
+    return retentionFlags;
+  };
+
   // A segment has two parts: a segment header part and a segment data part.
   //
   // A segment header contains the following fields:
@@ -52,11 +93,14 @@
   //  - segment page association
   //  - segment data length
   //
-  var decodeFirstSegment = function (decoded, buffer) {
+  var decodeFirstSegment = function (buffer) {
     var segment = {};
 
     segment.number = buffer.readInt32();
     segment.flags  = decodeSegmentHeaderFlags(buffer.readByte());
+    segment.refSegmentCountAndRetentionFlags = decodeRefSegmentCountAndRetentionFlags(buffer);
+
+    return segment;
   };
 
   var streamFrom = function (buffer) {
@@ -74,8 +118,7 @@
       },
 
       readInt32: function () {
-        var number = this.readBytes(4);
-        return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
+        return int32(this.readBytes(4));
       }
     };
   };
@@ -84,12 +127,15 @@
     SEQUENTIAL: SEQUENTIAL,
     RANDOM_ACCESS: RANDOM_ACCESS,
 
+    streamFrom: streamFrom,
+    parseSegmentHeader: decodeFirstSegment,
+
     parse: function (buffer) {
       var stream  = streamFrom(buffer);
       var decoded = {};
 
       decodeHeader(decoded, stream);
-      decodeFirstSegment(decoded, stream);
+      decodeFirstSegment(stream);
 
       return decoded;
     }
