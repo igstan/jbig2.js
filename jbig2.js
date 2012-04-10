@@ -64,9 +64,9 @@
 
   var decodeSegmentHeaderFlags = function (flags) {
     return {
-      deferredNonRetain:          flags & 0x80 === 0x80,            // 1000 0000
-      pageAssociationSizeInBytes: flags & 0x40 === 0x40 ? 4 : 1,    // 0100 0000
-      segmentType:                flags & 0x3F                      // 0011 1111
+      deferredNonRetain:          flags & 0x80,         // 1000 0000
+      pageAssociationSizeInBytes: flags & 0x40 ? 4 : 1, // 0100 0000
+      segmentType:                flags & 0x3F          // 0011 1111
     };
   };
 

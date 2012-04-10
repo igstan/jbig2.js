@@ -67,4 +67,5 @@ test("segment header parsing", function () {
   equal(header.number, 0);
   equal(header.flags.segmentType, JBIG2.segmentTypes.SYMBOL_DICTIONARY);
   equal(header.flags.pageAssociationSizeInBytes, 1);
+  equal(header.flags.deferredNonRetain, false);
 });
