@@ -71,7 +71,7 @@
   };
 
   var decodeRefSegmentCountAndRetentionFlags = function (buffer) {
-    var retentionFlags;
+    var decoded = {};
     var octet = buffer.readByte();
 
     console.log(octet);
@@ -79,7 +79,8 @@
     var refSegmentCount = (octet & 0xE0) >> 5;
 
     if (refSegmentCount <= 4) {
-      retentionFlags = octet;
+      decoded.refSegmentCount = refSegmentCount;
+      decoded.retentionFlags = octet;
     } else if (refSegmentCount === 7) {
       var longFormCountAndFlags = new Uint8Array([
         (octet ^ 0xe0),    // bits 0-4, i.e. we drop the refSegmentCount
@@ -93,7 +94,8 @@
       // see section 7.2.4 of the specs
       var bytesToRead = 4 + Math.ceil((refSegmentCount + 1) / 8);
       var noOfRententionFlagBytes = bytesToRead - 4;
-      retentionFlags = buffer.readBytes(noOfRententionFlagBytes);
+      decoded.retentionFlags = buffer.readBytes(noOfRententionFlagBytes);
+      decoded.refSegmentCount = refSegmentCount;
 
     } else {
       throw new Error(
@@ -102,9 +104,7 @@
       );
     }
 
-    console.log(retentionFlags);
-
-    return retentionFlags;
+    return decoded;
   };
 
   // A segment has two parts: a segment header part and a segment data part.
