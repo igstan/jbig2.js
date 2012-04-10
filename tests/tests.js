@@ -57,4 +57,5 @@ test("segment header parsing", function () {
   var header = JBIG2.parseSegmentHeader(buffer);
 
   equal(header.number, 0);
+  equal(header.flags.segmentType, 0);
 });
