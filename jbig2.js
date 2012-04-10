@@ -117,7 +117,7 @@
   //  - segment page association
   //  - segment data length
   //
-  var decodeFirstSegment = function (buffer) {
+  var parseSegmentHeader = function (buffer) {
     var segment = {};
 
     segment.number = buffer.readInt32();
@@ -157,7 +157,7 @@
     RANDOM_ACCESS: RANDOM_ACCESS,
 
     streamFrom: streamFrom,
-    parseSegmentHeader: decodeFirstSegment,
+    parseSegmentHeader: parseSegmentHeader,
     segmentTypes: segmentTypes,
 
     parse: function (buffer) {
@@ -165,7 +165,7 @@
       var decoded = {};
 
       decodeHeader(decoded, stream);
-      decodeFirstSegment(stream);
+      parseSegmentHeader(stream);
 
       return decoded;
     }
