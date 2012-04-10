@@ -123,9 +123,11 @@
     segment.number = buffer.readInt32();
     segment.flags  = decodeSegmentHeaderFlags(buffer.readByte());
     segment.refSegmentCountAndRetentionFlags = decodeRefSegmentCountAndRetentionFlags(buffer);
+    // read referred-to segment numbers
     segment.pageAssociation = segment.flags.pageAssociationSizeInBytes === 1
                             ? buffer.readByte()
                             : buffer.readInt32();
+    segment.dataLength = buffer.readInt32();
 
     return segment;
   };

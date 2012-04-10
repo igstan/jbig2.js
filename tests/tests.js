@@ -62,8 +62,6 @@ test("segment header parsing", function () {
   ]));
   var header = JBIG2.parseSegmentHeader(buffer);
 
-  console.log(header);
-
   equal(header.number, 0);
   equal(header.flags.segmentType, JBIG2.segmentTypes.SYMBOL_DICTIONARY);
   equal(header.flags.pageAssociationSizeInBytes, 1);
@@ -71,4 +69,5 @@ test("segment header parsing", function () {
   equal(header.refSegmentCountAndRetentionFlags.refSegmentCount, 0);
   equal(header.refSegmentCountAndRetentionFlags.retentionFlags, 1);
   equal(header.pageAssociation, 0);
+  equal(header.dataLength, 24);
 });
