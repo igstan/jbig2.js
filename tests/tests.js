@@ -1,6 +1,6 @@
 "use strict";
 
-var loadBuffer = function (file, fn) {
+var withBuffer = function (file, fn) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", file);
   xhr.responseType = "arraybuffer";
@@ -20,7 +20,7 @@ var withMessage = function (message) {
 module("File Header");
 
 asyncTest("throws on invalid file header ID", function () {
-  loadBuffer("corrupt-id.jbig2", function (buffer) {
+  withBuffer("corrupt-id.jbig2", function (buffer) {
     raises(function () {
       JBIG2.parse(buffer);
     }, withMessage("Control header check has failed"));
@@ -29,7 +29,7 @@ asyncTest("throws on invalid file header ID", function () {
 });
 
 asyncTest("throws on non-zero reserved bits in file header flags", function () {
-  loadBuffer("non-zero-reserved-bit.jbig2", function (buffer) {
+  withBuffer("non-zero-reserved-bit.jbig2", function (buffer) {
     raises(function () {
       JBIG2.parse(buffer);
     }, withMessage("Reserved bits (2-7) of file header flags are not zero"));
@@ -38,7 +38,7 @@ asyncTest("throws on non-zero reserved bits in file header flags", function () {
 });
 
 asyncTest("parses correct file organization", function () {
-  loadBuffer("annex-h.jbig2", function (buffer) {
+  withBuffer("annex-h.jbig2", function (buffer) {
     var decoded = JBIG2.parse(buffer);
     equal(decoded.sequential, true);
     equal(decoded.fileOrganization, JBIG2.SEQUENTIAL);
@@ -47,7 +47,7 @@ asyncTest("parses correct file organization", function () {
 });
 
 asyncTest("parses correct number of pages", function () {
-  loadBuffer("annex-h.jbig2", function (buffer) {
+  withBuffer("annex-h.jbig2", function (buffer) {
     var decoded = JBIG2.parse(buffer);
     equal(decoded.pageCount, 3);
     start();
