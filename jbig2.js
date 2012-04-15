@@ -9,6 +9,10 @@
     return (number[0] << 24) | (number[1] << 16) | (number[2] << 8) | number[3];
   };
 
+  var int16 = function (number) {
+    return (number[0] << 8) | number[1];
+  };
+
   var parseHeaderFlags = function (octet, decoded) {
     if ((octet & 0xfc) != 0) {
       throw new Error("Reserved bits (2-7) of file header flags are not zero");
@@ -64,26 +68,23 @@
 
   var decodeSegmentHeaderFlags = function (flags) {
     return {
-      deferredNonRetain:          flags & 0x80,         // 1000 0000
-      pageAssociationSizeInBytes: flags & 0x40 ? 4 : 1, // 0100 0000
-      segmentType:                flags & 0x3F          // 0011 1111
+      deferredNonRetain:          (flags & 0x80) === 0x80,          // 1000 0000
+      pageAssociationSizeInBytes: (flags & 0x40) ? 4 : 1,           // 0100 0000
+      segmentType:                (flags & 0x3F)                    // 0011 1111
     };
   };
 
   var decodeRefSegmentCountAndRetentionFlags = function (buffer) {
     var decoded = {};
     var octet = buffer.readByte();
-
-    console.log(octet);
-
     var refSegmentCount = (octet & 0xE0) >> 5;
 
     if (refSegmentCount <= 4) {
       decoded.refSegmentCount = refSegmentCount;
-      decoded.retentionFlags = octet;
+      decoded.retentionFlags = (octet & ~0xe0); // clear the first 3 bits (5-7), i.e. we drop the refSegmentCount
     } else if (refSegmentCount === 7) {
       var longFormCountAndFlags = new Uint8Array([
-        (octet ^ 0xe0),    // bits 0-4, i.e. we drop the refSegmentCount
+        (octet & ~0xe0), // clear the first 3 bits (5-7), i.e. we drop the refSegmentCount
         buffer.readByte(),
         buffer.readByte(),
         buffer.readByte()
@@ -123,7 +124,27 @@
     segment.number = buffer.readInt32();
     segment.flags  = decodeSegmentHeaderFlags(buffer.readByte());
     segment.refSegmentCountAndRetentionFlags = decodeRefSegmentCountAndRetentionFlags(buffer);
-    // read referred-to segment numbers
+
+    segment.referredSegments = [];
+    var segmentCount = segment.refSegmentCountAndRetentionFlags.refSegmentCount;
+
+    if (segment.number <= 256) {
+      var bytes = buffer.readBytes(segmentCount);
+      for (var i=0; i<bytes.length; i += 1) {
+        segment.referredSegments.push(bytes[i]);
+      }
+    } else if (segment.number <= 65536) {
+      var bytes = buffer.readBytes(segmentCount * 2);
+      for (var i=0; i<bytes.length; i += 2) {
+        segment.referredSegments.push(int16(bytes.subarray(i, i + 2)));
+      }
+    } else {
+      var bytes = buffer.readBytes(segmentCount * 4);
+      for (var i=0; i<bytes.length; i += 4) {
+        segment.referredSegments.push(int32(bytes.subarray(i, i + 4)));
+      }
+    }
+
     segment.pageAssociation = segment.flags.pageAssociationSizeInBytes === 1
                             ? buffer.readByte()
                             : buffer.readInt32();
