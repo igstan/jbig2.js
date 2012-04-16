@@ -129,3 +129,19 @@ test("spec annex H example", function () {
   equal(header.pageAssociation, 0);
   equal(header.dataLength, 24);
 });
+
+test("tenth segment header from Annex H example", function () {
+  var buffer = JBIG2.streamFrom(new Uint8Array([
+    0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x1B
+  ]));
+  var header = JBIG2.parseSegmentHeader(buffer);
+
+  equal(header.number, 9);
+  equal(header.flags.segmentType, JBIG2.segmentTypes.SYMBOL_DICTIONARY);
+  equal(header.flags.pageAssociationSizeInBytes, 1);
+  equal(header.flags.deferredNonRetain, false);
+  equal(header.refSegmentCountAndRetentionFlags.refSegmentCount, 0);
+  equal(header.refSegmentCountAndRetentionFlags.retentionFlags, 0x01);
+  equal(header.pageAssociation, 2);
+  equal(header.dataLength, 27);
+});
