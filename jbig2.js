@@ -1,8 +1,11 @@
 ;(function (global) {
   "use strict";
 
-  var SEQUENTIAL    = "SEQUENTIAL";
-  var RANDOM_ACCESS = "RANDOM_ACCESS";
+  var SEQUENTIAL       = "SEQUENTIAL";
+  var RANDOM_ACCESS    = "RANDOM_ACCESS";
+  var ARITH_ENCODING   = "ARITH_ENCODING";
+  var HUFFMAN_ENCODING = "HUFFMAN_ENCODING";
+
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
   var int32 = function (number) {
@@ -173,13 +176,36 @@
     };
   };
 
+  var parseSymboldDictionaryFlags = function (dataHeader, buffer) {
+    var leftByte = buffer.readByte();
+    var rightByte = buffer.readByte();
+
+    if ((rightByte & 0x01) === 0x01) {
+      dataHeader.encoding = HUFFMAN_ENCODING;
+    } else {
+      dataHeader.encoding = ARITH_ENCODING;
+    }
+  };
+
+  var parseSymbolDictionaryDataHeader = function (segmentHeader, buffer) {
+    var parsedDataHeader = {};
+
+    parseSymboldDictionaryFlags(parsedDataHeader, buffer);
+
+    return parsedDataHeader;
+  };
+
   global.JBIG2 = {
     SEQUENTIAL: SEQUENTIAL,
     RANDOM_ACCESS: RANDOM_ACCESS,
+    ARITH_ENCODING: ARITH_ENCODING,
+    HUFFMAN_ENCODING: HUFFMAN_ENCODING,
 
     streamFrom: streamFrom,
     parseSegmentHeader: parseSegmentHeader,
     segmentTypes: segmentTypes,
+
+    parseSymbolDictionaryDataHeader: parseSymbolDictionaryDataHeader,
 
     parse: function (buffer) {
       var stream  = streamFrom(buffer);
