@@ -180,11 +180,7 @@
     var leftByte = buffer.readByte();
     var rightByte = buffer.readByte();
 
-    if ((rightByte & 0x01) === 0x01) {
-      dataHeader.encoding = HUFFMAN_ENCODING;
-    } else {
-      dataHeader.encoding = ARITH_ENCODING;
-    }
+    dataHeader.encoding = (rightByte & 0x01) ? HUFFMAN_ENCODING : ARITH_ENCODING;
   };
 
   var parseSymbolDictionaryDataHeader = function (segmentHeader, buffer) {
