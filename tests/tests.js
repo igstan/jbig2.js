@@ -17,6 +17,7 @@ var withMessage = function (message) {
   };
 };
 
+
 module("File Header");
 
 asyncTest("throws on invalid file header ID", function () {
@@ -53,6 +54,7 @@ asyncTest("parses correct number of pages", function () {
     start();
   });
 });
+
 
 module("Segment Header");
 
@@ -129,6 +131,9 @@ test("spec annex H example", function () {
   equal(header.pageAssociation, 0);
   equal(header.dataLength, 24);
 });
+
+
+module("Symbol Dictionary Segment");
 
 test("tenth segment header from Annex H example", function () {
   var buffer = JBIG2.streamFrom(new Uint8Array([
