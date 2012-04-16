@@ -159,4 +159,16 @@ test("tenth segment data from Annex H example", function () {
   var parsedDataHeader = JBIG2.parseSymbolDictionaryDataHeader(header, data);
 
   equal(parsedDataHeader.encoding, JBIG2.ARITH_ENCODING);
+  equal(parsedDataHeader.useRefinementAggregateCoding, false);
+  equal(parsedDataHeader.huffmanTables.deltaHeight, "B.4");
+  equal(parsedDataHeader.huffmanTables.deltaWidth, "B.2");
+  equal(parsedDataHeader.huffmanTables.heightClassCollective, "B.1");
+  equal(parsedDataHeader.huffmanTables.aggregationSymbolInstanceCount, "B.1");
+  equal(parsedDataHeader.sdTemplate, 2);
+  equal(parsedDataHeader.sdrTemplate, 0);
+  equal(parsedDataHeader.usedBitmapCodingContext, 0);
+  equal(parsedDataHeader.retainedBitmapCodingContext, 0);
+  deepEqual(parsedDataHeader.templatePixels.A, [{x:2, y:-1}]);
+  equal(parsedDataHeader.exportedSymbols, 2);
+  equal(parsedDataHeader.definedSymbols, 2);
 });

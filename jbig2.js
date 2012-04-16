@@ -172,6 +172,11 @@
 
       readInt32: function () {
         return int32(this.readBytes(4));
+      },
+
+      readSignedByte: function () {
+        var octet = this.readByte();
+        return (octet & 0x80) === 0x00 ? octet : octet | -0x0100;
       }
     };
   };
@@ -181,12 +186,79 @@
     var rightByte = buffer.readByte();
 
     dataHeader.encoding = (rightByte & 0x01) ? HUFFMAN_ENCODING : ARITH_ENCODING;
+    dataHeader.useRefinementAggregateCoding = (rightByte & 0x02) === 0x02;
+
+    var deltaHeight = (rightByte & 0x0C) >> 2;
+    var deltaHeightTable;
+    switch (deltaHeight) {
+      case 0: deltaHeightTable = "B.4"; break;
+      case 1: deltaHeightTable = "B.5"; break;
+      case 2: throw new Error("Illegal value");
+      case 3: deltaHeightTable = "USER_DEFINED"; break;
+    }
+
+    var deltaWidth = (rightByte & 0x30) >> 4;
+    var deltaWidthTable;
+    switch (deltaWidth) {
+      case 0: deltaWidthTable = "B.2"; break;
+      case 1: deltaWidthTable = "B.3"; break;
+      case 2: throw new Error("Illegal value");
+      case 3: deltaWidthTable = "USER_DEFINED"; break;
+    }
+
+    var heightClassCollective = ((rightByte & 0x30) >> 6) === 0x00 ? "B.1" : "USER_DEFINED";
+    var aggregationSymbolInstanceCount = ((rightByte & 0x40) >> 7) === 0x00 ? "B.1" : "USER_DEFINED";
+
+    dataHeader.huffmanTables = {
+      deltaHeight: deltaHeightTable,
+      deltaWidth: deltaWidthTable,
+      heightClassCollective: heightClassCollective,
+      aggregationSymbolInstanceCount: aggregationSymbolInstanceCount
+    };
+
+    dataHeader.sdTemplate = (leftByte & 0x0C) >> 2;
+    dataHeader.sdrTemplate = (leftByte & 0x10) >> 4;
+    dataHeader.usedBitmapCodingContext = (leftByte & 0x01) === 0x01;
+    dataHeader.retainedBitmapCodingContext = (leftByte & 0x02) === 0x02;
+  };
+
+  var parseSymboldDictionaryATFlags = function (dataHeader, buffer) {
+    if (dataHeader.sdTemplate === 0) {
+      dataHeader.templatePixels.A = [
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() }
+      ];
+    } else {
+      dataHeader.templatePixels.A = [
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() }
+      ];
+    }
+  };
+
+  var parseSymbolDictionaryRefinementATFlags = function (dataHeader, buffer) {
+    if (dataHeader.useRefinementAggregateCoding && dataHeader.sdrTemplate === 0) {
+      dataHeader.templatePixels.AR = [
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() }
+      ];
+    }
   };
 
   var parseSymbolDictionaryDataHeader = function (segmentHeader, buffer) {
-    var parsedDataHeader = {};
+    var parsedDataHeader = {
+      templatePixels: {
+        A: [], AR: []
+      }
+    };
 
     parseSymboldDictionaryFlags(parsedDataHeader, buffer);
+    parseSymboldDictionaryATFlags(parsedDataHeader, buffer);
+    parseSymbolDictionaryRefinementATFlags(parsedDataHeader, buffer);
+
+    parsedDataHeader.exportedSymbols = buffer.readInt32();
+    parsedDataHeader.definedSymbols = buffer.readInt32();
 
     return parsedDataHeader;
   };
