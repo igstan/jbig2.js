@@ -198,3 +198,47 @@ test("test encoding of sequence from Annex H, section 2 in the spec", function (
     return octet === encoded[offset];
   }));
 });
+
+test("test decoding of sequence from Annex H, section 2 in the spec", function () {
+  var decoded = {
+    bytes: [],
+
+    bitIndex: 0,
+    byteIndex: 0,
+
+    pushBit: function (bit) {
+      var octet = this.bytes[this.byteIndex];
+      octet = octet === undefined ? 0x00 : octet;
+
+      octet = octet | (bit << (7 - this.bitIndex));
+      this.bytes[this.byteIndex] = octet;
+
+      this.bitIndex++;
+
+      if (this.bitIndex === 8) {
+        this.bitIndex = 0;
+        this.byteIndex++;
+      }
+    }
+  };
+
+  var sequence = [
+    0x00, 0x02, 0x00, 0x51, 0x00, 0x00, 0x00, 0xC0, 0x03, 0x52, 0x87, 0x2A,
+    0xAA, 0xAA, 0xAA, 0xAA, 0x82, 0xC0, 0x20, 0x00, 0xFC, 0xD7, 0x9E, 0xF6,
+    0xBF, 0x7F, 0xED, 0x90, 0x4F, 0x46, 0xA3, 0xBF
+  ];
+
+  var encodedData = JBIG2.streamFrom(new Uint8Array([
+    0x84, 0xC7, 0x3B, 0xFC, 0xE1, 0xA1, 0x43, 0x04, 0x02, 0x20, 0x00, 0x00,
+    0x41, 0x0D, 0xBB, 0x86, 0xF4, 0x31, 0x7F, 0xFF, 0x88, 0xFF, 0x37, 0x47,
+    0x1A, 0xDB, 0x6A, 0xDF, 0xFF, 0xAC
+  ]));
+
+  var CX = { I: 0, MPS: 0 };
+  var decode = ArithmeticCoder.decoder(encodedData);
+  for (var i=0, max=256; i<max; i++) {
+    decoded.pushBit(decode(CX));
+  }
+
+  deepEqual(decoded.bytes, sequence);
+});

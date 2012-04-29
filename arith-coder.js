@@ -211,8 +211,125 @@
     return B;
   }
 
+  // DECODER. See Figures E.13 and E.14 in the specification.
+  function decoder(stream) {
+    var Long = goog.math.Long;
+
+    var B,  // current byte of arithmetically-coded data
+        B1, // byte of arithmetically-coded data following the current byte
+        C,  // value of bit stream in code register
+        A,  // probability interval
+        CT; // renormalization shift counter
+
+    // INITDEC. See Figure E.20 in the specification.
+    var initDecoder = function () {
+      B     = stream.readByte();
+      B1    = stream.readByte();
+      C     = Long.fromInt(B << 16);
+      byteIn();
+      C  = C.shiftLeft(7);
+      CT = CT - 7;
+      A  = 0x8000;
+    }
+
+    var byteIn = function () {
+      if (B === 0xFF) {
+        if (B1 > 0x8F) {
+          C  = C.add(Long.fromInt(0xFF00));
+          CT = 8;
+        } else {
+          B  = B1;
+          B1 = stream.readByte();
+          C  = C.add(Long.fromInt(B << 9));
+          CT = 7;
+        }
+      } else {
+        B  = B1;
+        B1 = stream.readByte();
+        C  = C.add(Long.fromInt(B << 8));
+        CT = 8;
+      }
+    }
+
+    var mpsExchange = function (CX) {
+      var D;
+
+      if (A < Qe[CX.I]) {
+        D = 1 - CX.MPS;
+
+        if (SWITCH[CX.I] === 1) {
+          CX.MPS = 1 - CX.MPS;
+        }
+
+        CX.I = NLPS[CX.I];
+      } else {
+        D = CX.MPS;
+        CX.I = NMPS[CX.I];
+      }
+
+      return D;
+    }
+
+    var lpsExchange = function (CX) {
+      var D;
+
+      if (A < Qe[CX.I]) {
+        A = Qe[CX.I];
+        D = CX.MPS;
+        CX.I = NMPS[CX.I];
+      } else {
+        A = Qe[CX.I];
+        D = 1 - CX.MPS;
+
+        if (SWITCH[CX.I] === 1) {
+          CX.MPS = 1 - CX.MPS;
+        }
+
+        CX.I = NLPS[CX.I];
+      }
+
+      return D;
+    }
+
+    var renormd = function () {
+      do {
+        if (CT === 0) {
+          byteIn();
+        }
+
+        A  = A << 1;
+        C  = C.shiftLeft(1);
+        CT = CT - 1;
+      } while ((A & 0x8000) === 0);
+    }
+
+    initDecoder();
+
+    return function (CX) {
+      var D;
+
+      A = A - Qe[CX.I];
+
+      if (C.shiftRight(16).lessThan(Long.fromInt(Qe[CX.I]))) {
+        D = lpsExchange(CX);
+        renormd();
+      } else {
+        C = C.subtract(Long.fromInt(Qe[CX.I]).shiftLeft(16));
+        if ((A & 0x8000) === 0) {
+          D = mpsExchange(CX);
+          renormd();
+        } else {
+          D = CX.MPS;
+        }
+      }
+
+      return D;
+    };
+  }
+
   global.ArithmeticCoder = {
-    encode: encode
+    encode: encode,
+    decoder: decoder
   };
 
 })(this);
