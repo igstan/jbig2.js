@@ -228,6 +228,7 @@
       A  = 0x8000;
     }
 
+    // BYTEIN. See Figure E.19 in the specification.
     var byteIn = function () {
       if (B === 0xFF) {
         if (B1 > 0x8F) {
@@ -247,6 +248,7 @@
       }
     }
 
+    // MPS_EXCHANGE. See Figure E.16 in the specification.
     var mpsExchange = function (CX) {
       var D;
 
@@ -266,6 +268,7 @@
       return D;
     }
 
+    // LPS_EXCHANGE. See Figure E.17 in the specification.
     var lpsExchange = function (CX) {
       var D;
 
@@ -287,6 +290,7 @@
       return D;
     }
 
+    // RENORMD. See Figure E.18 in the specification.
     var renormd = function () {
       do {
         if (CT === 0) {
@@ -301,6 +305,7 @@
 
     initDecoder();
 
+    // DECODE. See Figure E.15 in the specification.
     return function (CX) {
       var D;
 
