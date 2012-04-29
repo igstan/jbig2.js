@@ -329,9 +329,24 @@
     };
   }
 
+  function ArithmeticContext(size, index) {
+    this.index = index;
+    this.i     = new Uint8Array(size);
+    this.mps   = new Uint8Array(size);
+  }
+
+  ArithmeticContext.prototype = {
+    get I()        { return this.i[this.index];    },
+    set I(value)   { this.i[this.index] = value;   },
+    get MPS()      { return this.mps[this.index];  },
+    set MPS(value) { this.mps[this.index] = value; }
+  };
+
   global.ArithmeticCoder = {
     encode: encode,
     decoder: decoder
   };
+
+  global.ArithmeticContext = ArithmeticContext;
 
 })(this);

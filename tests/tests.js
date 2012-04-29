@@ -234,7 +234,7 @@ test("test decoding of sequence from Annex H, section 2 in the spec", function (
     0x1A, 0xDB, 0x6A, 0xDF, 0xFF, 0xAC
   ]));
 
-  var CX = { I: 0, MPS: 0 };
+  var CX = new ArithmeticContext(512, 0);
   var decode = ArithmeticCoder.decoder(encodedData);
   for (var i=0, max=256; i<max; i++) {
     decoded.pushBit(decode(CX));
