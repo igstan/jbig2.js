@@ -69,6 +69,71 @@
     EXTENSION                                    : 62
   };
 
+  // Used to decode the difference in height between two height classes
+  var decodeUsingIADH = function (buffer) {
+
+  };
+
+  // Params:
+  //
+  //  - `useHuffman`: boolean, use Huffman coding
+  //  - `useRefAgg`: boolean, use refinement and aggregate coding
+  //  - `inputSymbolCount`: number
+  //  - `inputSymbols`: array of symbols
+  //  - `defineSymbolCount`: number
+  //  - `exportSymbolCount`: number
+  //  - `huffmanTables`: { deltaWidth, deltaHeight, heightClass, aggregationInstances }
+  //  - `symbolBitmapTemplate`: number
+  //  - `refinementBitmapTemplate`: number
+  //  - `templatePixels`: { A[4]: [{x, y}], RA[2]: [{x, y}]}
+  //
+  // Returns: an array of symbols
+  //
+  var decodeHeightClassDeltaHeight = function (buffer, args) {
+    if (args.useHuffman) {
+      decodeUsing(args.huffmanTables.deltaHeight);
+    } else {
+      decodeUsingIADH(buffer);
+    }
+  };
+
+  var decoders = {
+    // Params:
+    //
+    //  - `useHuffman`: boolean, use Huffman coding
+    //  - `useRefAgg`: boolean, use refinement and aggregate coding
+    //  - `inputSymbolCount`: number
+    //  - `inputSymbols`: array of symbols
+    //  - `defineSymbolCount`: number
+    //  - `exportSymbolCount`: number
+    //  - `huffmanTables`: { deltaWidth, deltaHeight, heightClass, aggregationInstances }
+    //  - `symbolBitmapTemplate`: number
+    //  - `refinementBitmapTemplate`: number
+    //  - `templatePixels`: { A[4]: [{x, y}], RA[2]: [{x, y}]}
+    //
+    // Returns: an array of symbols
+    //
+    symbolDictionary: function (buffer, args) {
+      var definedSymbols = [];
+
+      if (args.useHuffman && !args.useRefAgg) {
+        var definedSymbolWidths = []; // has args.defineSymbolCount length
+      }
+
+      var currentHeightClass = 0;
+      var currentSymbolWidth = 0;
+      var currentHeightClassWidth = 0;
+
+      for (var decodedSymbols = 0; decodedSymbols < args.defineSymbolCount; decodedSymbols++) {
+        var deltaHeight = decodeHeightClassDeltaHeight(buffer, args);
+        currentHeightClass = currentHeightClass + deltaHeight;
+        currentSymbolWidth = 0;
+        currentHeightClassWidth = 0;
+        var firstSymbolInCurrentHeightClass = decodedSymbols;
+      }
+    }
+  };
+
   var decodeSegmentHeaderFlags = function (flags) {
     return {
       deferredNonRetain:          (flags & 0x80) === 0x80,          // 1000 0000
@@ -360,7 +425,3 @@
 //     Controls all the previous decoding procedures.
 
 // 7.2 – Segment header syntax
-
-
-
-
