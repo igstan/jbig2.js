@@ -1,7 +1,8 @@
 ;(function (global) {
   "use strict";
 
-  var Qe = [
+  // Values for Qe, NMPS, NLPS and SWITCH are taken from Table E.1 in the spec.
+  var Qe = [ // Probability table for symbols.
     0x5601, 0x3401, 0x1801, 0x0AC1, 0x0521, 0x0221, 0x5601, 0x5401, 0x4801,
     0x3801, 0x3001, 0x2401, 0x1C01, 0x1601, 0x5601, 0x5401, 0x5101, 0x4801,
     0x3801, 0x3401, 0x3001, 0x2801, 0x2401, 0x2201, 0x1C01, 0x1801, 0x1601,
@@ -10,19 +11,19 @@
     0x0001, 0x5601
   ];
 
-  var NMPS = [
+  var NMPS = [ // Next More Probable Symbol
     1, 2, 3, 4, 5, 38, 7, 8, 9, 10, 11, 12, 13, 29, 15, 16, 17, 18, 19, 20,
     21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
     39, 40, 41, 42, 43, 44, 45, 45, 46
   ];
 
-  var NLPS = [
+  var NLPS = [ // Next Less Probable Symbol
     1, 6, 9, 12, 29, 33, 6, 14, 14, 14, 17, 18, 20, 21, 14, 14, 15, 16, 17,
     18, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
     35, 36, 37, 38, 39, 40, 41, 42, 43, 46
   ];
 
-  var SWITCH = [
+  var SWITCH = [ // Switch MPS and LPS on an LPS renormalisation?
     1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
   ];
