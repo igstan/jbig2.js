@@ -329,6 +329,7 @@
     dataHeader.encoding = (rightByte & 0x01) ? HUFFMAN_ENCODING : ARITH_ENCODING;
     dataHeader.useRefinementAggregateCoding = (rightByte & 0x02) === 0x02;
 
+    // This should only be parsed when dataHeader.encoding = HUFFMAN_ENCODING.
     var deltaHeight = (rightByte & 0x0C) >> 2;
     var deltaHeightTable;
     switch (deltaHeight) {
@@ -338,6 +339,7 @@
       case 3: deltaHeightTable = "USER_DEFINED"; break;
     }
 
+    // This should only be parsed when dataHeader.encoding = HUFFMAN_ENCODING.
     var deltaWidth = (rightByte & 0x30) >> 4;
     var deltaWidthTable;
     switch (deltaWidth) {

@@ -165,10 +165,6 @@ test("tenth segment data from Annex H example", function () {
 
   equal(parsedDataHeader.encoding, JBIG2.ARITH_ENCODING);
   equal(parsedDataHeader.useRefinementAggregateCoding, false);
-  equal(parsedDataHeader.huffmanTables.deltaHeight, "B.4");
-  equal(parsedDataHeader.huffmanTables.deltaWidth, "B.2");
-  equal(parsedDataHeader.huffmanTables.heightClassCollective, "B.1");
-  equal(parsedDataHeader.huffmanTables.aggregationSymbolInstanceCount, "B.1");
   equal(parsedDataHeader.sdTemplate, 2);
   equal(parsedDataHeader.sdrTemplate, 0);
   equal(parsedDataHeader.usedBitmapCodingContext, 0);
