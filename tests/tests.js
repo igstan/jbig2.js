@@ -242,3 +242,19 @@ test("test decoding of sequence from Annex H, section 2 in the spec", function (
 
   deepEqual(decoded.bytes, sequence);
 });
+
+var returnsSequentially = function (values) {
+  values = arguments.length === 1 ? values : Array.apply([], arguments);
+  return function () {
+    return values.shift();
+  };
+};
+
+// See the IADW decoding example on page 115 of the specification.
+test("arithmetic integer decoding", function () {
+  var context = new ArithmeticContext(512, 1);
+  var stubDecoder = returnsSequentially(0, 1, 0, 1, 0, 0, 0);
+  var n = JBIG2.decodeInteger(context, stubDecoder);
+
+  equal(n, 12);
+});

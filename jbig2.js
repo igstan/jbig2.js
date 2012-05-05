@@ -5,6 +5,7 @@
   var RANDOM_ACCESS    = "RANDOM_ACCESS";
   var ARITH_ENCODING   = "ARITH_ENCODING";
   var HUFFMAN_ENCODING = "HUFFMAN_ENCODING";
+  var OOB              = { toString: function () { return "out-of-band"; } };
 
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
@@ -69,9 +70,84 @@
     EXTENSION                                    : 62
   };
 
-  // Used to decode the difference in height between two height classes
-  var decodeUsingIADH = function (buffer) {
+  // INTDECODE. See Figure A.1 in the specification.
+  var decodeInteger = function (CX, arithmeticDecode) {
+    var bitsToRead, padding;
+    var V = 0;
 
+    // PREV always contains the values of the eight most-recently-decoded
+    // bits, plus a leading 1 bit, which is used to indicate the number of
+    // bits decoded so far.
+    var PREV = 1;
+
+    // This function takes care that the latest decoded bit is pushed into PREV.
+    var decodeBit = function () {
+      CX.index = PREV; // update the context before decoding the next bit
+      var D = arithmeticDecode(CX);
+
+      if (PREV < 256) {
+        PREV = (PREV << 1) | D;
+      } else {
+        PREV = (((PREV << 1) | D) & 511) | 256;
+      }
+
+      return D;
+    };
+
+    var S = decodeBit();
+
+    if (decodeBit()) {
+      if (decodeBit()) {
+        if (decodeBit()) {
+          if (decodeBit()) {
+            if (decodeBit()) {
+              bitsToRead = 32;
+              padding = 4436;
+            } else {
+              bitsToRead = 12;
+              padding = 340;
+            }
+          } else {
+            bitsToRead = 8;
+            padding = 84;
+          }
+        } else {
+          bitsToRead = 6;
+          padding = 20;
+        }
+      } else {
+        bitsToRead = 4;
+        padding = 4;
+      }
+    } else {
+      bitsToRead = 2;
+      padding = 0;
+    }
+
+    while (bitsToRead--) {
+      var D = decodeBit();
+      V = (V << 1) | D;
+    }
+
+    V += padding;
+
+    return S === 0 ? V : (V > 0 ? -V : OOB);
+  };
+
+  var decodingContexts = {
+    IAAI : new ArithmeticContext(512, 0),
+    IADH : new ArithmeticContext(512, 0),
+    IADS : new ArithmeticContext(512, 0),
+    IADT : new ArithmeticContext(512, 0),
+    IADW : new ArithmeticContext(512, 0),
+    IAEX : new ArithmeticContext(512, 0),
+    IAFS : new ArithmeticContext(512, 0),
+    IAIT : new ArithmeticContext(512, 0),
+    IARI : new ArithmeticContext(512, 0),
+    IARDH: new ArithmeticContext(512, 0),
+    IARDW: new ArithmeticContext(512, 0),
+    IARDX: new ArithmeticContext(512, 0),
+    IARDY: new ArithmeticContext(512, 0),
   };
 
   // Params:
@@ -93,7 +169,7 @@
     if (args.useHuffman) {
       decodeUsing(args.huffmanTables.deltaHeight);
     } else {
-      decodeUsingIADH(buffer);
+      return decodeInteger(decodingContexts.IADH, ArithmeticCoder.decoder(buffer));
     }
   };
 
@@ -339,6 +415,8 @@
     segmentTypes: segmentTypes,
 
     parseSymbolDictionaryDataHeader: parseSymbolDictionaryDataHeader,
+
+    decodeInteger: decodeInteger,
 
     parse: function (buffer) {
       var stream  = streamFrom(buffer);
