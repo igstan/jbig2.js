@@ -295,8 +295,13 @@ test("parse generic region segment data header", function () {
   equal(parsed.offset.x, 4);
   equal(parsed.offset.y, 11);
   equal(parsed.operation, "OR");
-  equal(parsed.operation, "OR");
   equal(parsed.useMMR, false);
   equal(parsed.templateID, 0);
   equal(parsed.useTypicalPrediction, true);
+  deepEqual(parsed.templatePixels, [
+    { x: 3, y:-1 },
+    { x:-3, y:-1 },
+    { x: 2, y:-2 },
+    { x:-2, y:-2 }
+  ]);
 });

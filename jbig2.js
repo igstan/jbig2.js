@@ -425,6 +425,28 @@
     parsed.useTypicalPrediction = !!(octet & 0x08);
   };
 
+  var parseTemplatePixels = function (buffer, parsed) {
+    if (parsed.useMMR) {
+      return { A: [] };
+    }
+
+    if (parsed.templateID === 0) {
+      parsed.templatePixels = [
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() }
+      ];
+    } else {
+      parsed.templatePixels = [
+        { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 }
+      ];
+    }
+  };
+
   var parseGenericRegionSegmentDataHeader = function (header, buffer) {
     var parsed = {
       width:  buffer.readInt32(),
@@ -437,6 +459,7 @@
     };
 
     parseGenericRegionSegmentFlags(buffer, parsed);
+    parseTemplatePixels(buffer, parsed);
 
     return parsed;
   };
