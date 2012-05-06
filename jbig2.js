@@ -399,6 +399,48 @@
     return parsedDataHeader;
   };
 
+  var parseOperation = function (buffer) {
+    var octet = buffer.readByte();
+
+    if ((octet & 0xF8) !== 0) throw new Error("First 5 bits must be all 0");
+
+    var last3Bits = octet & 0x07;
+
+    switch (last3Bits) {
+      case 0: return "OR";
+      case 1: return "AND";
+      case 2: return "XOR";
+      case 3: return "XNOR";
+      case 4: return "REPLACE";
+    }
+  };
+
+  var parseGenericRegionSegmentFlags = function (buffer, parsed) {
+    var octet = buffer.readByte();
+
+    if ((octet & 0xF0) !== 0) throw new Error("First 4 bits must be all 0");
+
+    parsed.useMMR = !!(octet & 0x01);
+    parsed.templateID = (octet & 0x06) >> 1;
+    parsed.useTypicalPrediction = !!(octet & 0x08);
+  };
+
+  var parseGenericRegionSegmentDataHeader = function (header, buffer) {
+    var parsed = {
+      width:  buffer.readInt32(),
+      height: buffer.readInt32(),
+      offset: {
+        x: buffer.readInt32(),
+        y: buffer.readInt32()
+      },
+      operation: parseOperation(buffer),
+    };
+
+    parseGenericRegionSegmentFlags(buffer, parsed);
+
+    return parsed;
+  };
+
   global.JBIG2 = {
     SEQUENTIAL: SEQUENTIAL,
     RANDOM_ACCESS: RANDOM_ACCESS,
@@ -412,6 +454,8 @@
     parseSymbolDictionaryDataHeader: parseSymbolDictionaryDataHeader,
 
     decodeInteger: decodeInteger,
+
+    parseGenericRegionSegmentDataHeader: parseGenericRegionSegmentDataHeader,
 
     decodeHeightClassDeltaHeight: decodeHeightClassDeltaHeight,
     decodeHeightClassDeltaWidth: decodeHeightClassDeltaWidth,

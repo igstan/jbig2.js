@@ -274,3 +274,29 @@ test("arithmetic integer decoding", function () {
 
   equal(n, 12);
 });
+
+
+module("Generic Region Segment");
+
+// See the twelfth segment data part in Annex H.
+test("parse generic region segment data header", function () {
+  var data = JBIG2.streamFrom(new Uint8Array([
+    0x00, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x2C, 0x00, 0x00, 0x00, 0x04,
+    0x00, 0x00, 0x00, 0x0B, 0x00, 0x08, 0x03, 0xFF, 0xFD, 0xFF, 0x02, 0xFE,
+    0xFE, 0xFE, 0x04, 0xEE, 0xED, 0x87, 0xFB, 0xCB, 0x2B, 0xFF, 0xAC
+  ]));
+
+  var segmentHeader = {};
+
+  var parsed = JBIG2.parseGenericRegionSegmentDataHeader(segmentHeader, data);
+
+  equal(parsed.width, 54);
+  equal(parsed.height, 44);
+  equal(parsed.offset.x, 4);
+  equal(parsed.offset.y, 11);
+  equal(parsed.operation, "OR");
+  equal(parsed.operation, "OR");
+  equal(parsed.useMMR, false);
+  equal(parsed.templateID, 0);
+  equal(parsed.useTypicalPrediction, true);
+});
