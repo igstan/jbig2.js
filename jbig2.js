@@ -150,26 +150,19 @@
     IARDY: new ArithmeticContext(512, 0),
   };
 
-  // Params:
-  //
-  //  - `useHuffman`: boolean, use Huffman coding
-  //  - `useRefAgg`: boolean, use refinement and aggregate coding
-  //  - `inputSymbolCount`: number
-  //  - `inputSymbols`: array of symbols
-  //  - `defineSymbolCount`: number
-  //  - `exportSymbolCount`: number
-  //  - `huffmanTables`: { deltaWidth, deltaHeight, heightClass, aggregationInstances }
-  //  - `symbolBitmapTemplate`: number
-  //  - `refinementBitmapTemplate`: number
-  //  - `templatePixels`: { A[4]: [{x, y}], RA[2]: [{x, y}]}
-  //
-  // Returns: an array of symbols
-  //
-  var decodeHeightClassDeltaHeight = function (buffer, args) {
+  var decodeHeightClassDeltaHeight = function (args, decode) {
     if (args.useHuffman) {
       decodeUsing(args.huffmanTables.deltaHeight);
     } else {
-      return decodeInteger(decodingContexts.IADH, ArithmeticCoder.decoder(buffer));
+      return decodeInteger(decodingContexts.IADH, decode);
+    }
+  };
+
+  var decodeHeightClassDeltaWidth = function (args, decode) {
+    if (args.useHuffman) {
+      decodeUsing(args.huffmanTables.deltaWidth);
+    } else {
+      return decodeInteger(decodingContexts.IADW, decode);
     }
   };
 
@@ -419,6 +412,9 @@
     parseSymbolDictionaryDataHeader: parseSymbolDictionaryDataHeader,
 
     decodeInteger: decodeInteger,
+
+    decodeHeightClassDeltaHeight: decodeHeightClassDeltaHeight,
+    decodeHeightClassDeltaWidth: decodeHeightClassDeltaWidth,
 
     parse: function (buffer) {
       var stream  = streamFrom(buffer);

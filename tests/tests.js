@@ -174,6 +174,26 @@ test("tenth segment data from Annex H example", function () {
   equal(parsedDataHeader.definedSymbols, 2);
 });
 
+test("delta height and width decoded using integer arithmetic decoding", function () {
+  var dataPart = JBIG2.streamFrom(new Uint8Array([
+    0x4F, 0xE7, 0x8C, 0x20, 0x0E, 0x1D, 0xC7, 0xCF, 0x01, 0x11, 0xC4, 0xB2,
+    0x6F, 0xFF, 0xAC
+  ]));
+
+  var parsedDataHeader = {
+    useHuffman: false,
+    useRefAgg: false,
+    definedSymbols: 2
+  };
+
+  var decode = ArithmeticCoder.decoder(dataPart);
+
+  var deltaHeight = JBIG2.decodeHeightClassDeltaHeight(parsedDataHeader, decode);
+  equal(deltaHeight, 6);
+  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(parsedDataHeader, decode);
+  equal(deltaWidth, 6);
+});
+
 
 module("Arithmetic Coding");
 
