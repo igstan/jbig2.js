@@ -166,6 +166,95 @@
     }
   };
 
+  var GBTEMPLATE = [
+    // GBTEMPLATE=0. (section 6.2.5.3, figure 3)
+    //
+    // Given the location of the pixel currently being decoded, the location
+    // of the adaptive template pixels, and a bitmap with the already decoded
+    // bits, it will return the new context value to be used in arithmetic
+    // decoding.
+    //
+    function (currentPixel, AT, bitmap) {
+      var n = 0;
+      var x = currentPixel.x;
+      var y = currentPixel.y;
+      var width = bitmap[0].length;
+      var height = bitmap.length;
+
+      // _ _ 4 X X X 3 _
+      // _ 2 X X X X X 1
+      // X X X X o _ _ _
+      var template = [
+        {y:-2, x:{min:-2, max: 2}},
+        {y:-1, x:{min:-3, max: 3}},
+        {y: 0, x:{min:-4, max:-1}},
+      ];
+
+      // If the locations of the adaptive template pixels are not the default
+      // one, then we adjust the limit intervals of the X coordinates in the
+      // template. Basically, we remove them. This is because a AT pixel is
+      // ignored if it's found above a normal pixel.
+      if (AT[3].x !== template[0].x.min || AT[3].y !== template[0].y)
+        template[0].x.min = -1;
+      if (AT[2].x !== template[0].x.max || AT[2].y !== template[0].y)
+        template[0].x.max = 1;
+      if (AT[1].x !== template[1].x.min || AT[1].y !== template[1].y)
+        template[1].x.min = -2;
+      if (AT[0].x !== template[1].x.max || AT[0].y !== template[1].y)
+        template[1].x.max = 2;
+
+      for (var i=0, imax=template.length; i<imax; i++) {
+        var row = template[i];
+
+        for (var j=row.x.min, jmax=row.x.max; j<=jmax; j++) {
+          var targetX = x + j;
+          var targetY = y + row.y;
+
+          // Skip if pixel coordinates are not on the bitmap.
+          if (targetX < 0 || targetX >= width)  continue;
+          if (targetY < 0 || targetY >= height) continue;
+
+          n = (n << 1) | bitmap[targetY][targetX];
+        }
+      }
+
+      return n;
+    },
+
+    // GBTEMPLATE=1. (section 6.2.5.3, figure 4)
+    //
+    // Given the location of the pixel currently being decoded, the location
+    // of the adaptive template pixels, and a bitmap with the already decoded
+    // bits, it will return the new context value to be used in arithmetic
+    // decoding.
+    //
+    function (currentPixel, adaptivePixels, bitmap) {
+
+    },
+
+    // GBTEMPLATE=2. (section 6.2.5.3, figure 5)
+    //
+    // Given the location of the pixel currently being decoded, the location
+    // of the adaptive template pixels, and a bitmap with the already decoded
+    // bits, it will return the new context value to be used in arithmetic
+    // decoding.
+    //
+    function (currentPixel, adaptivePixels, bitmap) {
+
+    },
+
+    // GBTEMPLATE=3. (section 6.2.5.3, figure 6)
+    //
+    // Given the location of the pixel currently being decoded, the location
+    // of the adaptive template pixels, and a bitmap with the already decoded
+    // bits, it will return the new context value to be used in arithmetic
+    // decoding.
+    //
+    function (currentPixel, adaptivePixels, bitmap) {
+
+    }
+  ];
+
   var decoders = {
     // Params:
     //
@@ -482,6 +571,8 @@
 
     decodeHeightClassDeltaHeight: decodeHeightClassDeltaHeight,
     decodeHeightClassDeltaWidth: decodeHeightClassDeltaWidth,
+
+    GBTEMPLATE: GBTEMPLATE,
 
     parse: function (buffer) {
       var stream  = streamFrom(buffer);

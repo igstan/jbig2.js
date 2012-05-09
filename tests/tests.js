@@ -299,9 +299,49 @@ test("parse generic region segment data header", function () {
   equal(parsed.templateID, 0);
   equal(parsed.useTypicalPrediction, true);
   deepEqual(parsed.templatePixels, [
-    { x: 3, y:-1 },
-    { x:-3, y:-1 },
-    { x: 2, y:-2 },
-    { x:-2, y:-2 }
+    {x:3, y:-1}, {x:-3, y:-1}, {x:2, y:-2}, {x:-2, y:-2}
   ]);
+
+  var bitmap = JBIG2.decodeGenericRegion(data, {
+    useMMR: parsed.useMMR,
+    width: parsed.width,
+    height: parsed.height,
+    templateID: parsed.templateID,
+    useTypicalPrediction: parsed.useTypicalPrediction,
+    skipPixels: [],
+    templatePixels: parsed.templatePixels
+  });
+
+  var expectedBitmap = [
+  ];
+
+  console.log(bitmap);
+
+  deepEqual(bitmap, expectedBitmap);
+});
+
+test("extract number from bitmap using GBTEMPLATE 0", function () {
+  var currentPixel = {x:2, y:2};
+  var adaptivePixels = [{x:3, y:-1}, {x:-3, y:-1}, {x:2, y:-2}, {x:-2, y:-2}];
+  var bitmap = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+    [1, 1]
+  ];
+
+  var n = JBIG2.GBTEMPLATE[0](currentPixel, adaptivePixels, bitmap);
+  equal(n, 8107);
+});
+
+test("extract number from bitmap using GBTEMPLATE 0 and custom A4 pixel coordinates", function () {
+  var currentPixel = {x:2, y:2};
+  var adaptivePixels = [{x: 3, y:-1}, {x:-3, y:-1}, {x: 2, y:-2}, {x:-1, y:-1}];
+  var bitmap = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+    [1, 1]
+  ];
+
+  var n = JBIG2.GBTEMPLATE[0](currentPixel, adaptivePixels, bitmap);
+  equal(n, 4011);
 });
