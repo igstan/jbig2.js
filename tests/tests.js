@@ -330,11 +330,13 @@ test("extract number from bitmap using GBTEMPLATE 0", function () {
   ];
 
   var n = JBIG2.GBTEMPLATE[0](currentPixel, adaptivePixels, bitmap);
-  equal(n, 8107);
+  equal(n, 64163);
 });
 
 test("extract number from bitmap using GBTEMPLATE 0 and custom A4 pixel coordinates", function () {
   var currentPixel = {x:2, y:2};
+
+  // The last AT pixel, A4 is placed at [-1,-1] instead of [-2,-2]
   var adaptivePixels = [{x: 3, y:-1}, {x:-3, y:-1}, {x: 2, y:-2}, {x:-1, y:-1}];
   var bitmap = [
     [1, 1, 1, 1, 1, 1, 1],
@@ -343,5 +345,5 @@ test("extract number from bitmap using GBTEMPLATE 0 and custom A4 pixel coordina
   ];
 
   var n = JBIG2.GBTEMPLATE[0](currentPixel, adaptivePixels, bitmap);
-  equal(n, 4011);
+  equal(n, 31395);
 });

@@ -211,8 +211,14 @@
           var targetY = y + row.y;
 
           // Skip if pixel coordinates are not on the bitmap.
-          if (targetX < 0 || targetX >= width)  continue;
-          if (targetY < 0 || targetY >= height) continue;
+          if (targetX < 0 || targetX >= width) {
+            n = (n << 1);
+            continue;
+          }
+          if (targetY < 0 || targetY >= height) {
+            n = (n << 1);
+            continue;
+          }
 
           n = (n << 1) | bitmap[targetY][targetX];
         }
