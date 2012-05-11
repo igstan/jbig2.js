@@ -192,8 +192,8 @@
 
       // If the locations of the adaptive template pixels are not the default
       // one, then we adjust the limit intervals of the X coordinates in the
-      // template. Basically, we remove them. This is because a AT pixel is
-      // ignored if it's found above a normal pixel.
+      // template. Basically, we remove them. This is because an AT pixel is
+      // ignored if it's found positioned above a normal pixel.
       if (AT[3].x !== template[0].x.min || AT[3].y !== template[0].y)
         template[0].x.min = -1;
       if (AT[2].x !== template[0].x.max || AT[2].y !== template[0].y)
@@ -260,6 +260,60 @@
 
     }
   ];
+
+  // Expected arguments:
+  //
+  //  - `useMMR`: boolean, whether Modified Modified READ is used
+  //  - `width`: number, region width
+  //  - `height`: number, region height
+  //  - `templateID`:
+  //  - `useTypicalPrediction`: boolean
+  //  - `skipPixels`: matrix (of size `width` by `height`) of pixels to skip
+  //  - `templatePixels`: { A[4]: [{x, y}] }
+  //
+  var decodeGenericRegion = function (buffer, args) {
+    var ctx = new ArithmeticContext(65536, 0);
+    var decode = ArithmeticCoder.decoder(buffer);
+    var LTP = 0;
+    var bitmap = [[]];
+
+    for (var i=0, max=args.height; i<max; i++) {
+      if (args.useTypicalPrediction) {
+        // 6.2.5.7. Decoding the bitmap. Step 3.b of the algorithm
+        ctx.index = [
+          0x9B25, // number represented by figure  8
+          0x0795, // number represented by figure  9
+          0x00E5, // number represented by figure 10
+          0x0195, // number represented by figure 11
+        ][args.templateID];
+
+        var SLTP = decode(ctx);
+        LTP ^= SLTP;
+      }
+
+      if (LTP === 1) {
+        // copy row above
+        bitmap[i] = Array.apply([], bitmap[i - 1]);
+      } else {
+        for (var j=0, jmax=args.width; j<jmax; j++) {
+          if (args.skipPixels.length !== 0 && args.skipPixels[i][j]) {
+            bitmap[i][j] = 0;
+          } else {
+            var currentPixel = {x:j, y:i};
+            var n = GBTEMPLATE[args.templateID](currentPixel, args.templatePixels, bitmap);
+
+            ctx.index = n;
+            var pixel = decode(ctx);
+
+            bitmap[i] = bitmap[i] || [];
+            bitmap[i][j] = pixel;
+          }
+        }
+      }
+    }
+
+    return bitmap;
+  };
 
   var decoders = {
     // Params:
@@ -577,6 +631,8 @@
 
     decodeHeightClassDeltaHeight: decodeHeightClassDeltaHeight,
     decodeHeightClassDeltaWidth: decodeHeightClassDeltaWidth,
+
+    decodeGenericRegion: decodeGenericRegion,
 
     GBTEMPLATE: GBTEMPLATE,
 
