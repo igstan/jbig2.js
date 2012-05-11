@@ -245,8 +245,51 @@
     // bits, it will return the new context value to be used in arithmetic
     // decoding.
     //
-    function (currentPixel, adaptivePixels, bitmap) {
+    function (currentPixel, AT, bitmap) {
+      var n = 0;
+      var x = currentPixel.x;
+      var y = currentPixel.y;
+      var width = bitmap[0].length;
+      var height = bitmap.length;
 
+      // _ _ 4 X X X 3 _
+      // _ 2 X X X X X 1
+      // X X X X o _ _ _
+      var template = [
+        {y:-2, x:{min:-1, max: 1}},
+        {y:-1, x:{min:-2, max: 2}},
+        {y: 0, x:{min:-2, max:-1}},
+      ];
+
+      // If the locations of the adaptive template pixels are not the default
+      // one, then we adjust the limit intervals of the X coordinates in the
+      // template. Basically, we remove them. This is because an AT pixel is
+      // ignored if it's found positioned above a normal pixel.
+      if (AT[0].x !== template[1].x.max || AT[0].y !== template[1].y)
+        template[1].x.max = 1;
+
+      for (var i=0, imax=template.length; i<imax; i++) {
+        var row = template[i];
+
+        for (var j=row.x.min, jmax=row.x.max; j<=jmax; j++) {
+          var targetX = x + j;
+          var targetY = y + row.y;
+
+          // Skip if pixel coordinates are not on the bitmap.
+          if (targetX < 0 || targetX >= width) {
+            n = (n << 1);
+            continue;
+          }
+          if (targetY < 0 || targetY >= height) {
+            n = (n << 1);
+            continue;
+          }
+
+          n = (n << 1) | bitmap[targetY][targetX];
+        }
+      }
+
+      return n;
     },
 
     // GBTEMPLATE=3. (section 6.2.5.3, figure 6)

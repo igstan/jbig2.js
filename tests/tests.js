@@ -399,3 +399,25 @@ test("extract number from bitmap using GBTEMPLATE 0 and custom A4 pixel coordina
   var n = JBIG2.GBTEMPLATE[0](currentPixel, adaptivePixels, bitmap);
   equal(n, 31395);
 });
+
+test("extract number from bitmap using GBTEMPLATE 2 (simple)", function () {
+  var currentPixel = {x:1, y:0};
+  var adaptivePixels = [{x: 2, y:-1}];
+  var bitmap = [[1]];
+
+  var n = JBIG2.GBTEMPLATE[2](currentPixel, adaptivePixels, bitmap);
+  equal(n, 1);
+});
+
+test("extract number from bitmap using GBTEMPLATE 2 (complex)", function () {
+  var currentPixel = {x:2, y:2};
+  var adaptivePixels = [{x:2, y:-1}];
+  var bitmap = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+    [1, 1]
+  ];
+
+  var n = JBIG2.GBTEMPLATE[2](currentPixel, adaptivePixels, bitmap);
+  equal(n, 983);
+});
