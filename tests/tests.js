@@ -1,5 +1,19 @@
 "use strict";
 
+var displaySymbol = function (symbol) {
+  var s = "";
+
+  symbol.forEach(function (row) {
+    row.forEach(function (value) {
+      s += value ? "O" : " ";
+    });
+
+    s += "\n";
+  });
+
+  return s;
+};
+
 var withBuffer = function (file, fn) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", file);
@@ -15,6 +29,44 @@ var withMessage = function (message) {
   return function (error) {
     return error.message === message;
   };
+};
+
+var hex = function (n) {
+  return (n <= 0xF ? "0" : "") + n.toString(16);
+};
+
+var updateViewer = function (buffer) {
+  var ul = document.createElement("ul");
+  ul.className = "bytes";
+  for (var i=0; i<buffer.length; i++) {
+    var li = document.createElement("li");
+    li.innerHTML = hex(buffer[i]);
+    li.className = "byte";
+    ul.appendChild(li);
+  }
+
+  document.body.appendChild(ul);
+
+  var stream = JBIG2.streamFrom(buffer);
+  var viewer = Object.create(stream);
+  var pointer = 1;
+
+  viewer.readByte = function () {
+    var li = ul.querySelector("li:nth-child("+pointer+")");
+
+    if (li) {
+      li.classList.add("read-byte");
+    } else {
+      console.warn("pointer: ", pointer);
+    }
+
+    pointer++;
+    var b = stream.readByte.call(this);
+
+    return b;
+  };
+
+  return viewer;
 };
 
 
