@@ -5,6 +5,32 @@
   <meta charset="UTF-8" />
   <title>JBIG2 Test Suite</title>
   <link rel="stylesheet" href="qunit/qunit.css">
+<style type="text/css">
+  .bytes {
+    width: 296px;
+    border: solid #d0d0d0 1px;
+    margin: 0;
+    padding: 1px;
+    overflow: hidden;
+    resize: horizontal;
+  }
+  .byte {
+    width: 35px;
+    height: 30px;
+    float: left;
+    margin: 1px;
+    padding: 0;
+    list-style: none inside;
+    text-align: center;
+    line-height: 30px;
+    font-size: 15px;
+    font-family: Menlo, Monaco, Inconsolata, monospace;
+  }
+  .read-byte {
+    color: #9D590A;
+    background: #F0EF9F;
+  }
+  </style>
   <script src="qunit/qunit.js"></script>
   <script src="../goog-math-long.js"></script>
   <script src="../arith-coder.js"></script>
