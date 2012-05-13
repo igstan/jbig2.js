@@ -252,9 +252,9 @@
       var width = bitmap[0].length;
       var height = bitmap.length;
 
-      // _ _ 4 X X X 3 _
-      // _ 2 X X X X X 1
-      // X X X X o _ _ _
+      // _ X X X _
+      // X X X X 1
+      // X X o _ _
       var template = [
         {y:-2, x:{min:-1, max: 1}},
         {y:-1, x:{min:-2, max: 2}},
