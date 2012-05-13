@@ -314,9 +314,7 @@
   //  - `skipPixels`: matrix (of size `width` by `height`) of pixels to skip
   //  - `templatePixels`: { A[4]: [{x, y}] }
   //
-  var decodeGenericRegion = function (buffer, args) {
-    var ctx = new ArithmeticContext(65536, 0);
-    var decode = ArithmeticCoder.decoder(buffer);
+  var decodeGenericRegion = function (buffer, args, decode, ctx) {
     var LTP = 0;
     var bitmap = [[]];
 
@@ -358,40 +356,96 @@
     return bitmap;
   };
 
+  var decodeBitmap = function (buffer, args, decoder, ctx) {
+    if (args.useRefAgg) {
+
+    } else {
+      return decodeGenericRegion(buffer, {
+        useMMR: false,
+        width: args.currentSymbolWidth,
+        height: args.currentHeightClass,
+        templateID: args.sdTemplate,
+        useTypicalPrediction: false,
+        skipPixels: [],
+        templatePixels: args.templatePixels.A
+      }, decoder, ctx);
+    }
+  };
+
   var decoders = {
     // Params:
     //
     //  - `useHuffman`: boolean, use Huffman coding
     //  - `useRefAgg`: boolean, use refinement and aggregate coding
-    //  - `inputSymbolCount`: number
     //  - `inputSymbols`: array of symbols
-    //  - `defineSymbolCount`: number
-    //  - `exportSymbolCount`: number
+    //  - `definedSymbols`: number
+    //  - `exportedSymbols`: number
     //  - `huffmanTables`: { deltaWidth, deltaHeight, heightClass, aggregationInstances }
-    //  - `symbolBitmapTemplate`: number
+    //  - `sdTemplate`: number
     //  - `refinementBitmapTemplate`: number
     //  - `templatePixels`: { A[4]: [{x, y}], RA[2]: [{x, y}]}
     //
     // Returns: an array of symbols
     //
     symbolDictionary: function (buffer, args) {
-      var definedSymbols = [];
+      var symbols = [];
 
       if (args.useHuffman && !args.useRefAgg) {
-        var definedSymbolWidths = []; // has args.defineSymbolCount length
+        var definedSymbolWidths = []; // has args.definedSymbols length
       }
 
       var currentHeightClass = 0;
       var currentSymbolWidth = 0;
       var currentHeightClassWidth = 0;
+      var totalWidth = 0;
 
-      for (var decodedSymbols = 0; decodedSymbols < args.defineSymbolCount; decodedSymbols++) {
-        var deltaHeight = decodeHeightClassDeltaHeight(buffer, args);
+      decodingContexts.IADH = new ArithmeticContext(512, 0);
+      decodingContexts.IADW = new ArithmeticContext(512, 0);
+      var regionCtx = new ArithmeticContext(65536, 0);
+
+      var firstSymbolInCurrentHeightClass;
+      var decode = ArithmeticCoder.decoder(buffer);
+
+      while (symbols.length < args.definedSymbols) {
+        var deltaHeight = decodeHeightClassDeltaHeight(args, decode);
         currentHeightClass = currentHeightClass + deltaHeight;
         currentSymbolWidth = 0;
         currentHeightClassWidth = 0;
-        var firstSymbolInCurrentHeightClass = decodedSymbols;
+        // firstSymbolInCurrentHeightClass = decodedSymbols;
+
+        while (true) {
+          var deltaWidth = decodeHeightClassDeltaWidth(args, decode);
+
+          if (deltaWidth === OOB) {
+            break;
+          }
+
+          currentSymbolWidth = currentSymbolWidth + deltaWidth;
+          totalWidth = totalWidth + currentSymbolWidth;
+
+          if (!args.useHuffman || args.useRefAgg) {
+            var bitmap = decodeBitmap(buffer, {
+              currentSymbolWidth: currentSymbolWidth,
+              currentHeightClass: currentHeightClass,
+              sdTemplate:         args.sdTemplate,
+              templatePixels:     args.templatePixels
+            }, decode, regionCtx);
+
+            symbols.push(bitmap);
+          }
+
+          // if (args.useHuffman && !args.useRefAgg) {
+          //   var bitmap = decodeBitmap(buffer, args);
+          //   definedSymbolWidths.push(currentSymbolWidth);
+          // }
+        }
+
+        // if (args.useHuffman && !args.useRefAgg) {
+        //   var bitmap = decodeCollectiveBitmap(buffer, args);
+        // }
       }
+
+      return symbols;
     }
   };
 
@@ -512,7 +566,8 @@
     var rightByte = buffer.readByte();
 
     dataHeader.encoding = (rightByte & 0x01) ? HUFFMAN_ENCODING : ARITH_ENCODING;
-    dataHeader.useRefinementAggregateCoding = (rightByte & 0x02) === 0x02;
+    dataHeader.useHuffman = dataHeader.encoding === HUFFMAN_ENCODING;
+    dataHeader.useRefAgg = (rightByte & 0x02) === 0x02;
 
     // This should only be parsed when dataHeader.encoding = HUFFMAN_ENCODING.
     var deltaHeight = (rightByte & 0x0C) >> 2;
@@ -566,7 +621,7 @@
   };
 
   var parseSymbolDictionaryRefinementATFlags = function (dataHeader, buffer) {
-    if (dataHeader.useRefinementAggregateCoding && dataHeader.sdrTemplate === 0) {
+    if (dataHeader.useRefAgg && dataHeader.sdrTemplate === 0) {
       dataHeader.templatePixels.AR = [
         { x: buffer.readSignedByte(), y: buffer.readSignedByte() },
         { x: buffer.readSignedByte(), y: buffer.readSignedByte() }
@@ -674,6 +729,8 @@
 
     decodeHeightClassDeltaHeight: decodeHeightClassDeltaHeight,
     decodeHeightClassDeltaWidth: decodeHeightClassDeltaWidth,
+
+    decoders: decoders,
 
     decodeGenericRegion: decodeGenericRegion,
 

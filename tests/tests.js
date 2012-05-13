@@ -216,7 +216,8 @@ test("tenth segment data from Annex H example", function () {
   var parsedDataHeader = JBIG2.parseSymbolDictionaryDataHeader(header, data);
 
   equal(parsedDataHeader.encoding, JBIG2.ARITH_ENCODING);
-  equal(parsedDataHeader.useRefinementAggregateCoding, false);
+  equal(parsedDataHeader.useHuffman, false);
+  equal(parsedDataHeader.useRefAgg, false);
   equal(parsedDataHeader.sdTemplate, 2);
   equal(parsedDataHeader.sdrTemplate, 0);
   equal(parsedDataHeader.usedBitmapCodingContext, 0);
@@ -226,6 +227,7 @@ test("tenth segment data from Annex H example", function () {
   equal(parsedDataHeader.definedSymbols, 2);
 });
 
+// tenth segment data part from Annex H example
 test("delta height and width decoded using integer arithmetic decoding", function () {
   var dataPart = JBIG2.streamFrom(new Uint8Array([
     0x4F, 0xE7, 0x8C, 0x20, 0x0E, 0x1D, 0xC7, 0xCF, 0x01, 0x11, 0xC4, 0xB2,
@@ -244,6 +246,91 @@ test("delta height and width decoded using integer arithmetic decoding", functio
   equal(deltaHeight, 6);
   var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(parsedDataHeader, decode);
   equal(deltaWidth, 6);
+});
+
+test('decodes symbols "a" and "c" from the tenth segment of Annex H example', function () {
+  var dataPart = JBIG2.streamFrom(new Uint8Array([
+    0x4F, 0xE7, 0x8C, 0x20, 0x0E, 0x1D, 0xC7, 0xCF, 0x01, 0x11, 0xC4, 0xB2,
+    0x6F, 0xFF, 0xAC
+  ]));
+
+  var symbols = JBIG2.decoders.symbolDictionary(dataPart, {
+     useHuffman: false,
+     useRefAgg: false,
+     inputSymbols: [],
+     definedSymbols: 2,
+     exportedSymbols: 2,
+     huffmanTables: {},
+     sdTemplate: 2,
+     refinementBitmapTemplate: 0,
+     templatePixels: {
+       A: [{x:2, y:-1}], // nominal value for GBTEMPLATE 2
+       RA: []
+     }
+  });
+
+  console.group('symbol "c"');
+  console.log(displaySymbol(symbols[0]));
+  console.groupEnd();
+  console.group('symbol "a"');
+  console.log(displaySymbol(symbols[1]));
+  console.groupEnd();
+
+  equal(symbols.length, 2, "length of exported symbols");
+
+  var _ = 0;
+
+  var c = [
+    [_,1,1,1,1,_],
+    [1,_,_,_,_,1],
+    [1,_,_,_,_,_],
+    [1,_,_,_,_,_],
+    [1,_,_,_,_,1],
+    [_,1,1,1,1,_]
+  ];
+  deepEqual(symbols[0], c, 'decoded "c" symbol from Figure H.4(a)');
+
+  var a = [
+    [_,1,1,1,1,_],
+    [_,_,_,_,_,1],
+    [_,1,1,1,1,1],
+    [1,_,_,_,_,1],
+    [1,_,_,_,_,1],
+    [_,1,1,1,1,1]
+  ];
+  deepEqual(symbols[1], a, 'decoded "a" symbol from Figure H.4(b)');
+});
+
+test("seventeenth segment in Annex H", function () {
+  var _ = 0;
+  var data = JBIG2.streamFrom(new Uint8Array([
+    0x4F, 0xE7, 0x8D, 0x68, 0x1B, 0x14, 0x2F, 0x3F, 0xFF, 0xAC
+  ]));
+
+  var symbols = JBIG2.decoders.symbolDictionary(data, {
+     useHuffman: false,
+     useRefAgg: false,
+     inputSymbols: [],
+     definedSymbols: 1,
+     exportedSymbols: 1,
+     huffmanTables: {},
+     sdTemplate: 2,
+     refinementBitmapTemplate: 0,
+     templatePixels: {
+       A: [{x: 2, y:-1}], // nominal value for GBTEMPLATE 2
+       RA: []
+     }
+  });
+
+  // See Figure H.12(a)
+  deepEqual(symbols[0], [
+    [_,1,1,1,1,_],
+    [_,_,_,_,_,1],
+    [_,1,1,1,1,1],
+    [1,_,_,_,_,1],
+    [1,_,_,_,_,1],
+    [_,1,1,1,1,1]
+  ]);
 });
 
 
@@ -320,7 +407,7 @@ var returnsSequentially = function (values) {
 
 // See the IADW decoding example on page 115 of the specification.
 test("arithmetic integer decoding", function () {
-  var context = new ArithmeticContext(512, 1);
+  var context = new ArithmeticContext(512, 0);
   var stubDecoder = returnsSequentially(0, 1, 0, 1, 0, 0, 0);
   var n = JBIG2.decodeInteger(context, stubDecoder);
 
@@ -354,6 +441,9 @@ test("parse generic region segment data header", function () {
     {x:3, y:-1}, {x:-3, y:-1}, {x:2, y:-2}, {x:-2, y:-2}
   ]);
 
+  var ctx = new ArithmeticContext(65536, 0);
+  var decode = ArithmeticCoder.decoder(data);
+
   var bitmap = JBIG2.decodeGenericRegion(data, {
     useMMR: parsed.useMMR,
     width: parsed.width,
@@ -362,7 +452,7 @@ test("parse generic region segment data header", function () {
     useTypicalPrediction: parsed.useTypicalPrediction,
     skipPixels: [],
     templatePixels: parsed.templatePixels
-  });
+  }, decode, ctx);
 
   // See Figure H.6.
   var expectedBitmap = [
