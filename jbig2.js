@@ -166,6 +166,37 @@
     }
   };
 
+  var superimposeTemplate = function (currentPixel, template, bitmap) {
+    var x = currentPixel.x;
+    var y = currentPixel.y;
+    var width = bitmap[0].length;
+    var height = bitmap.length;
+    var n = 0;
+
+    for (var i=0, imax=template.length; i<imax; i++) {
+      var row = template[i];
+
+      for (var j=row.x.min, jmax=row.x.max; j<=jmax; j++) {
+        var targetX = x + j;
+        var targetY = y + row.y;
+
+        // Skip if pixel coordinates are not on the bitmap.
+        if (targetX < 0 || targetX >= width) {
+          n = (n << 1);
+          continue;
+        }
+        if (targetY < 0 || targetY >= height) {
+          n = (n << 1);
+          continue;
+        }
+
+        n = (n << 1) | bitmap[targetY][targetX];
+      }
+    }
+
+    return n;
+  };
+
   var GBTEMPLATE = [
     // GBTEMPLATE=0. (section 6.2.5.3, figure 3)
     //
@@ -175,12 +206,6 @@
     // decoding.
     //
     function (currentPixel, AT, bitmap) {
-      var n = 0;
-      var x = currentPixel.x;
-      var y = currentPixel.y;
-      var width = bitmap[0].length;
-      var height = bitmap.length;
-
       // _ _ 4 X X X 3 _
       // _ 2 X X X X X 1
       // X X X X o _ _ _
@@ -203,28 +228,7 @@
       if (AT[0].x !== template[1].x.max || AT[0].y !== template[1].y)
         template[1].x.max = 2;
 
-      for (var i=0, imax=template.length; i<imax; i++) {
-        var row = template[i];
-
-        for (var j=row.x.min, jmax=row.x.max; j<=jmax; j++) {
-          var targetX = x + j;
-          var targetY = y + row.y;
-
-          // Skip if pixel coordinates are not on the bitmap.
-          if (targetX < 0 || targetX >= width) {
-            n = (n << 1);
-            continue;
-          }
-          if (targetY < 0 || targetY >= height) {
-            n = (n << 1);
-            continue;
-          }
-
-          n = (n << 1) | bitmap[targetY][targetX];
-        }
-      }
-
-      return n;
+      return superimposeTemplate(currentPixel, template, bitmap);
     },
 
     // GBTEMPLATE=1. (section 6.2.5.3, figure 4)
@@ -246,12 +250,6 @@
     // decoding.
     //
     function (currentPixel, AT, bitmap) {
-      var n = 0;
-      var x = currentPixel.x;
-      var y = currentPixel.y;
-      var width = bitmap[0].length;
-      var height = bitmap.length;
-
       // _ X X X _
       // X X X X 1
       // X X o _ _
@@ -268,28 +266,7 @@
       if (AT[0].x !== template[1].x.max || AT[0].y !== template[1].y)
         template[1].x.max = 1;
 
-      for (var i=0, imax=template.length; i<imax; i++) {
-        var row = template[i];
-
-        for (var j=row.x.min, jmax=row.x.max; j<=jmax; j++) {
-          var targetX = x + j;
-          var targetY = y + row.y;
-
-          // Skip if pixel coordinates are not on the bitmap.
-          if (targetX < 0 || targetX >= width) {
-            n = (n << 1);
-            continue;
-          }
-          if (targetY < 0 || targetY >= height) {
-            n = (n << 1);
-            continue;
-          }
-
-          n = (n << 1) | bitmap[targetY][targetX];
-        }
-      }
-
-      return n;
+      return superimposeTemplate(currentPixel, template, bitmap);
     },
 
     // GBTEMPLATE=3. (section 6.2.5.3, figure 6)
