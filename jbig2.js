@@ -238,8 +238,24 @@
     // bits, it will return the new context value to be used in arithmetic
     // decoding.
     //
-    function (currentPixel, adaptivePixels, bitmap) {
+    function (currentPixel, AT, bitmap) {
+      // _ _ X X X X
+      // _ X X X X X 1
+      // X X X o _ _
+      var template = [
+        {y:-2, x:{min:-1, max: 2}},
+        {y:-1, x:{min:-2, max: 3}},
+        {y: 0, x:{min:-3, max:-1}},
+      ];
 
+      // If the locations of the adaptive template pixels are not the default
+      // one, then we adjust the limit intervals of the X coordinates in the
+      // template. Basically, we remove them. This is because an AT pixel is
+      // ignored if it's found positioned above a normal pixel.
+      if (AT[0].x !== template[1].x.max || AT[0].y !== template[1].y)
+        template[1].x.max = 2;
+
+      return superimposeTemplate(currentPixel, template, bitmap);
     },
 
     // GBTEMPLATE=2. (section 6.2.5.3, figure 5)
