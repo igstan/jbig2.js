@@ -266,7 +266,8 @@ test("tenth segment header from Annex H example", function () {
   equal(header.dataLength, 27);
 });
 
-test("tenth segment data from Annex H example", function () {
+// Tenth segment data from Annex H example.
+test("data header of a symbol dictionary segment using Arithmetic encoding", function () {
   var header = JBIG2.parseSegmentHeader(JBIG2.streamFrom(new Uint8Array([
     0x00, 0x00, 0x00, 0x09, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x1B
   ])));
