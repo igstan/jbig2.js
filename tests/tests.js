@@ -586,3 +586,25 @@ test("extract number from bitmap using GBTEMPLATE 2 (complex)", function () {
   var n = JBIG2.GBTEMPLATE[2](currentPixel, adaptivePixels, bitmap);
   equal(n, 983);
 });
+
+test("extract number from bitmap using GBTEMPLATE 3 (simple)", function () {
+  var currentPixel = {x:1, y:0};
+  var adaptivePixels = [{x:2, y:-1}];
+  var bitmap = [[1]];
+
+  var n = JBIG2.GBTEMPLATE[3](currentPixel, adaptivePixels, bitmap);
+  equal(n, 1);
+});
+
+test("extract number from bitmap using GBTEMPLATE 3 (complex)", function () {
+  var currentPixel = {x:2, y:2};
+  var adaptivePixels = [{x:2, y:-1}];
+  var bitmap = [
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+    [1, 1]
+  ];
+
+  var n = JBIG2.GBTEMPLATE[3](currentPixel, adaptivePixels, bitmap);
+  equal(n, 339);
+});
