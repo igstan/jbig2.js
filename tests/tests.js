@@ -396,6 +396,30 @@ test("seventeenth segment in Annex H", function () {
   ]);
 });
 
+// Third segment in the Annex H example.
+test("data header of a symbol dictionary segment using Huffman encoding", function () {
+  var header = JBIG2.parseSegmentHeader(JBIG2.streamFrom(new Uint8Array([
+    0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x1C
+  ])));
+  var data = JBIG2.streamFrom(new Uint8Array([
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0xE5, 0xCD,
+    0xF8, 0x00, 0x79, 0xE0, 0x84, 0x10, 0x81, 0xF0, 0x82, 0x10, 0x86, 0x10,
+    0x79, 0xF0, 0x00, 0x80
+  ]));
+
+  var parsedDataHeader = JBIG2.parseSymbolDictionaryDataHeader(header, data);
+
+  equal(parsedDataHeader.encoding, JBIG2.HUFFMAN_ENCODING);
+  equal(parsedDataHeader.useHuffman, true);
+  equal(parsedDataHeader.useRefAgg, false);
+  equal(parsedDataHeader.huffmanTables.deltaWidth, "B.2");
+  equal(parsedDataHeader.huffmanTables.deltaHeight, "B.4");
+  equal(parsedDataHeader.huffmanTables.heightClassCollective, "B.1");
+  equal(parsedDataHeader.huffmanTables.aggregationSymbolInstanceCount, "B.1");
+  equal(parsedDataHeader.exportedSymbols, 2);
+  equal(parsedDataHeader.definedSymbols, 2);
+});
+
 
 module("Generic Region Segment");
 

@@ -640,8 +640,14 @@
     };
 
     parseSymboldDictionaryFlags(parsedDataHeader, buffer);
-    parseSymboldDictionaryATFlags(parsedDataHeader, buffer);
-    parseSymbolDictionaryRefinementATFlags(parsedDataHeader, buffer);
+
+    if (!parsedDataHeader.useHuffman) {
+      parseSymboldDictionaryATFlags(parsedDataHeader, buffer);
+    }
+
+    if (parsedDataHeader.useRefAgg && !parsedDataHeader.sdrTemplate) {
+      parseSymbolDictionaryRefinementATFlags(parsedDataHeader, buffer);
+    }
 
     parsedDataHeader.exportedSymbols = buffer.readInt32();
     parsedDataHeader.definedSymbols = buffer.readInt32();
