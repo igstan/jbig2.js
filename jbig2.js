@@ -293,9 +293,8 @@
     // decoding.
     //
     function (currentPixel, AT, bitmap) {
-      // _ _ X X X X
       // _ X X X X X 1
-      // X X X o _ _
+      // X X X X o _ _
       var template = [
         {y:-1, x:{min:-3, max: 2}},
         {y: 0, x:{min:-4, max:-1}},
@@ -349,13 +348,9 @@
             bitmap[i][j] = 0;
           } else {
             var currentPixel = {x:j, y:i};
-            var n = GBTEMPLATE[args.templateID](currentPixel, args.templatePixels, bitmap);
-
-            ctx.index = n;
-            var pixel = decode(ctx);
-
+            ctx.index = GBTEMPLATE[args.templateID](currentPixel, args.templatePixels, bitmap);
             bitmap[i] = bitmap[i] || [];
-            bitmap[i][j] = pixel;
+            bitmap[i][j] = decode(ctx);
           }
         }
       }
