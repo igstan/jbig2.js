@@ -497,6 +497,59 @@ test("delta height and width decoded using Huffman encoding", function () {
   equal(deltaWidth.isOOB, true);
 });
 
+// Third segment in the Annex H example.
+test("data part of a symbol dictionary segment using Huffman encoding", function () {
+  var encoded = JBIG2.streamFrom(new Uint8Array([
+    0xE5, 0xCD, 0xF8, 0x00, 0x79, 0xE0, 0x84, 0x10, 0x81, 0xF0, 0x82, 0x10,
+    0x86, 0x10, 0x79, 0xF0, 0x00, 0x80
+  ]));
+
+  var symbols = JBIG2.decoders.symbolDictionary(encoded, {
+     useHuffman: true,
+     useRefAgg: false,
+     inputSymbols: [],
+     definedSymbols: 2,
+     exportedSymbols: 2,
+     huffmanTables: {
+       deltaWidth: "B2",
+       deltaHeight: "B4",
+       heightClassCollective: "B1",
+       aggregationSymbolInstanceCount: "B1"
+     }
+  });
+
+  console.group('symbol "c"');
+  console.log(displaySymbol(symbols[0]));
+  console.groupEnd();
+  console.group('symbol "a"');
+  console.log(displaySymbol(symbols[1]));
+  console.groupEnd();
+
+  equal(symbols.length, 2, "length of exported symbols");
+
+  var _ = 0;
+
+  var c = [
+    [_,1,1,1,1,_],
+    [1,_,_,_,_,1],
+    [1,_,_,_,_,_],
+    [1,_,_,_,_,_],
+    [1,_,_,_,_,1],
+    [_,1,1,1,1,_]
+  ];
+  deepEqual(symbols[0], c, 'decoded "c" symbol from Figure H.4(a)');
+
+  var a = [
+    [_,1,1,1,1,_],
+    [_,_,_,_,_,1],
+    [_,1,1,1,1,1],
+    [1,_,_,_,_,1],
+    [1,_,_,_,_,1],
+    [_,1,1,1,1,1]
+  ];
+  deepEqual(symbols[1], a, 'decoded "a" symbol from Figure H.4(b)');
+});
+
 
 module("Generic Region Segment");
 

@@ -388,6 +388,99 @@
     }
   };
 
+  var decodeCollectiveBitmap = function (buffer, args, decoder, args2, ctx) {
+    // 6.5.9 (1)
+    var size = huffman.decode(buffer, huffman.STANDARD_TABLES[args.huffmanTables.heightClassCollective]).value;
+
+    // 6.5.9 (2)
+    buffer.consumeBits();
+
+    if (size === 0) {
+      var bitmap = [];
+      var bytesPerRow = Math.ceil(args2.width / 8);
+      // 6.5.9 (3)
+      var bytesToRead = args2.height * bytesPerRow;
+      var bytes = buffer.readBytes(bytesToRead);
+
+      var count = 0;
+      for (var i=0; i<args2.height; i++) {
+        for (var j=0; j<bytesPerRow; j++) {
+          bitmap[i] = bitmap[i] || [];
+          bitmap[i][j] = bytes[count];
+          count++;
+        }
+      }
+
+      var column = 0;
+      var row = 0;
+      var collectiveBitmap = [];
+      var padding = args2.width % 8;
+
+      for (var i = 0; i < args2.height; i++) {
+        for (var j = 0; j < bytesPerRow; j++) {
+          if (j === (bytesPerRow - 1)) {
+            var octet = bitmap[i][j];
+            for (var bitPointer = 7; bitPointer >= padding; bitPointer--) {
+              var bit = (octet & (1 << bitPointer)) >> bitPointer;
+              collectiveBitmap[row] = collectiveBitmap[row] || [];
+              collectiveBitmap[row][column] = bit;
+              column++;
+            }
+            row++;
+            column = 0;
+          } else {
+            var octet = bitmap[i][j];
+            for (var bitPointer = 7; bitPointer >= 0; bitPointer--) {
+              var bit = (octet & (1 << bitPointer)) >> bitPointer;
+              collectiveBitmap[row] = collectiveBitmap[row] || [];
+              collectiveBitmap[row][column] = bit;
+              column++;
+            }
+          }
+        }
+      }
+
+      return collectiveBitmap;
+    } else {
+      throw new Error("Not implemented");
+      // return decodeGenericRegion(buffer, {
+      //   useMMR: true,
+      //   width: args.currentSymbolWidth,
+      //   height: args.currentHeightClass,
+      //   templateID: args.sdTemplate,
+      //   useTypicalPrediction: false,
+      //   skipPixels: [],
+      //   templatePixels: args.templatePixels.A
+      // }, decoder, ctx);
+    }
+  };
+
+  // Expected arguments:
+  //
+  //  - bitmap
+  //  - width
+  //  - height
+  //  - symbolWidths
+  //
+  var splitCollectiveBitmap = function (args) {
+    var bitmaps = [];
+    var decodedWidth = 0;
+
+    for (var i=0, ii=args.symbolWidths.length; i<ii; i++) {
+      var bitmap = [];
+      var width = args.symbolWidths[i];
+
+      for (var j=0, jj=args.height; j<jj; j++) {
+        bitmap[j] = args.bitmap[j].slice(decodedWidth, decodedWidth + width);
+      }
+
+      decodedWidth += width;
+      bitmaps.push(bitmap);
+    }
+
+    return bitmaps;
+  };
+
   var decoders = {
     // Params:
     //
@@ -407,39 +500,42 @@
       var symbols = [];
 
       if (args.useHuffman && !args.useRefAgg) {
-        var definedSymbolWidths = []; // has args.definedSymbols length
+        var newSymbolWidths = [];
       }
 
+      var decodedSymbols = 0;
       var currentHeightClass = 0;
       var currentSymbolWidth = 0;
       var currentHeightClassWidth = 0;
       var totalWidth = 0;
-
-      decodingContexts.IADH = new ArithmeticContext(512, 0);
-      decodingContexts.IADW = new ArithmeticContext(512, 0);
-      var regionCtx = new ArithmeticContext(65536, 0);
-
       var firstSymbolInCurrentHeightClass;
-      var decode = ArithmeticCoder.decoder(buffer);
+
+      if (!args.useHuffman) {
+        decodingContexts.IADH = new ArithmeticContext(512, 0);
+        decodingContexts.IADW = new ArithmeticContext(512, 0);
+        var regionCtx = new ArithmeticContext(65536, 0);
+        var decode = ArithmeticCoder.decoder(buffer);
+      }
 
       while (symbols.length < args.definedSymbols) {
-        var deltaHeight = decodeHeightClassDeltaHeight(args, decode);
-        currentHeightClass = currentHeightClass + deltaHeight;
+        var deltaHeight = decodeHeightClassDeltaHeight(buffer, args, decode);
+        currentHeightClass = currentHeightClass + deltaHeight.value;
         currentSymbolWidth = 0;
         currentHeightClassWidth = 0;
-        // firstSymbolInCurrentHeightClass = decodedSymbols;
+        firstSymbolInCurrentHeightClass = decodedSymbols;
 
         while (true) {
-          var deltaWidth = decodeHeightClassDeltaWidth(args, decode);
+          var deltaWidth = decodeHeightClassDeltaWidth(buffer, args, decode);
 
-          if (deltaWidth === OOB) {
+          if (deltaWidth.isOOB) {
             break;
           }
 
-          currentSymbolWidth = currentSymbolWidth + deltaWidth;
+          currentSymbolWidth = currentSymbolWidth + deltaWidth.value;
           totalWidth = totalWidth + currentSymbolWidth;
 
           if (!args.useHuffman || args.useRefAgg) {
+            // direct-coded symbol bitmap
             var bitmap = decodeBitmap(buffer, {
               currentSymbolWidth: currentSymbolWidth,
               currentHeightClass: currentHeightClass,
@@ -450,15 +546,25 @@
             symbols.push(bitmap);
           }
 
-          // if (args.useHuffman && !args.useRefAgg) {
-          //   var bitmap = decodeBitmap(buffer, args);
-          //   definedSymbolWidths.push(currentSymbolWidth);
-          // }
+          if (args.useHuffman && !args.useRefAgg) {
+            newSymbolWidths.push(currentSymbolWidth);
+          }
+
+          decodedSymbols++;
         }
 
-        // if (args.useHuffman && !args.useRefAgg) {
-        //   var bitmap = decodeCollectiveBitmap(buffer, args);
-        // }
+        if (args.useHuffman && !args.useRefAgg) {
+          var bitmap = decodeCollectiveBitmap(buffer, args, decode, {
+            height: currentHeightClass,
+            width: totalWidth
+          }, regionCtx);
+          symbols = symbols.concat(splitCollectiveBitmap({
+            bitmap: bitmap,
+            width: totalWidth,
+            height: currentHeightClass,
+            symbolWidths: newSymbolWidths
+          }));
+        }
       }
 
       return symbols;
@@ -557,6 +663,11 @@
     var bytePointer = 0;
 
     return {
+      consumeBits: function () {
+        bitPointer = 7;
+        bytePointer++;
+      },
+
       readBit : function () {
         var octet = buffer[bytePointer];
         var bit = (octet & (1 << bitPointer)) >> bitPointer;
