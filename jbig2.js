@@ -5,7 +5,13 @@
   var RANDOM_ACCESS    = "RANDOM_ACCESS";
   var ARITH_ENCODING   = "ARITH_ENCODING";
   var HUFFMAN_ENCODING = "HUFFMAN_ENCODING";
-  var OOB              = { toString: function () { return "out-of-band"; } };
+
+  var OOB = {
+    isOOB: true,
+    toString: function () {
+      return "out-of-band";
+    }
+  };
 
   var controlHeader = [0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A];
 
@@ -70,6 +76,13 @@
     EXTENSION                                    : 62
   };
 
+  var arithValue = function (v) {
+    return {
+      isOOB: false,
+      value: v
+    };
+  };
+
   // INTDECODE. See Figure A.1 in the specification.
   var decodeInteger = function (CX, arithmeticDecode) {
     var bitsToRead, padding;
@@ -131,7 +144,7 @@
 
     V += padding;
 
-    return S === 0 ? V : (V > 0 ? -V : OOB);
+    return S === 0 ? arithValue(V) : (V > 0 ? arithValue(-V) : OOB);
   };
 
   var decodingContexts = {
@@ -150,17 +163,17 @@
     IARDY: new ArithmeticContext(512, 0),
   };
 
-  var decodeHeightClassDeltaHeight = function (args, decode) {
+  var decodeHeightClassDeltaHeight = function (buffer, args, decode) {
     if (args.useHuffman) {
-      decodeUsing(args.huffmanTables.deltaHeight);
+      return huffman.decode(buffer, huffman.STANDARD_TABLES[args.huffmanTables.deltaHeight]);
     } else {
       return decodeInteger(decodingContexts.IADH, decode);
     }
   };
 
-  var decodeHeightClassDeltaWidth = function (args, decode) {
+  var decodeHeightClassDeltaWidth = function (buffer, args, decode) {
     if (args.useHuffman) {
-      decodeUsing(args.huffmanTables.deltaWidth);
+      return huffman.decode(buffer, huffman.STANDARD_TABLES[args.huffmanTables.deltaWidth]);
     } else {
       return decodeInteger(decodingContexts.IADW, decode);
     }
@@ -540,16 +553,40 @@
   };
 
   var streamFrom = function (buffer) {
-    var pointer = 0;
+    var bitPointer = 7;
+    var bytePointer = 0;
 
     return {
+      readBit : function () {
+        var octet = buffer[bytePointer];
+        var bit = (octet & (1 << bitPointer)) >> bitPointer;
+
+        bitPointer--;
+
+        if (bitPointer === -1) {
+          bitPointer = 7;
+          bytePointer++;
+        }
+
+        return bit;
+      },
+
+      readBits: function (n) {
+        var bits = 0;
+        while (n--) {
+          bits = (bits << 1) | this.readBit();
+        }
+        return bits;
+      },
+
       readByte: function () {
-        return buffer[pointer++];
+        bitPointer = 0;
+        return buffer[bytePointer++];
       },
 
       readBytes: function (n) {
-        var bytes = buffer.subarray(pointer, pointer + n);
-        pointer += n;
+        var bytes = buffer.subarray(bytePointer, bytePointer + n);
+        bytePointer += n;
         return bytes;
       },
 
@@ -576,8 +613,8 @@
     var deltaHeight = (rightByte & 0x0C) >> 2;
     var deltaHeightTable;
     switch (deltaHeight) {
-      case 0: deltaHeightTable = "B.4"; break;
-      case 1: deltaHeightTable = "B.5"; break;
+      case 0: deltaHeightTable = "B4"; break;
+      case 1: deltaHeightTable = "B5"; break;
       case 2: throw new Error("Illegal value");
       case 3: deltaHeightTable = "USER_DEFINED"; break;
     }
@@ -586,14 +623,14 @@
     var deltaWidth = (rightByte & 0x30) >> 4;
     var deltaWidthTable;
     switch (deltaWidth) {
-      case 0: deltaWidthTable = "B.2"; break;
-      case 1: deltaWidthTable = "B.3"; break;
+      case 0: deltaWidthTable = "B2"; break;
+      case 1: deltaWidthTable = "B3"; break;
       case 2: throw new Error("Illegal value");
       case 3: deltaWidthTable = "USER_DEFINED"; break;
     }
 
-    var heightClassCollective = ((rightByte & 0x30) >> 6) === 0x00 ? "B.1" : "USER_DEFINED";
-    var aggregationSymbolInstanceCount = ((rightByte & 0x40) >> 7) === 0x00 ? "B.1" : "USER_DEFINED";
+    var heightClassCollective = ((rightByte & 0x30) >> 6) === 0x00 ? "B1" : "USER_DEFINED";
+    var aggregationSymbolInstanceCount = ((rightByte & 0x40) >> 7) === 0x00 ? "B1" : "USER_DEFINED";
 
     dataHeader.huffmanTables = {
       deltaHeight: deltaHeightTable,

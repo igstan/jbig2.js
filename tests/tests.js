@@ -70,6 +70,49 @@ var updateViewer = function (buffer) {
 };
 
 
+module("Stream");
+
+test("readBit", function () {
+  var stream = JBIG2.streamFrom(new Uint8Array([0xAA]));
+
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+});
+
+test("readBits", function () {
+  var stream = JBIG2.streamFrom(new Uint8Array([0xAA]));
+  equal(stream.readBits(4), parseInt("1010", 2));
+});
+
+test("readBit + readBits", function () {
+  var stream = JBIG2.streamFrom(new Uint8Array([0xE5, 0xCD]));
+
+  // 0xE5
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+  equal(stream.readBits(2), parseInt("01", 2));
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 1);
+
+  // 0xCD
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 1);
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 0);
+  equal(stream.readBits(2), parseInt("11", 2));
+  equal(stream.readBit(), 0);
+  equal(stream.readBit(), 1);
+});
+
+
 module("Arithmetic Coding");
 
 test("test decoding of sequence from Annex H, section 2 in the spec", function () {
@@ -127,7 +170,7 @@ var returnsSequentially = function (values) {
 test("arithmetic integer decoding", function () {
   var context = new ArithmeticContext(512, 0);
   var stubDecoder = returnsSequentially(0, 1, 0, 1, 0, 0, 0);
-  var n = JBIG2.decodeInteger(context, stubDecoder);
+  var n = JBIG2.decodeInteger(context, stubDecoder).value;
 
   equal(n, 12);
 });
@@ -306,10 +349,10 @@ test("delta height and width decoded using integer arithmetic decoding", functio
 
   var decode = ArithmeticCoder.decoder(dataPart);
 
-  var deltaHeight = JBIG2.decodeHeightClassDeltaHeight(parsedDataHeader, decode);
-  equal(deltaHeight, 6);
-  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(parsedDataHeader, decode);
-  equal(deltaWidth, 6);
+  var deltaHeight = JBIG2.decodeHeightClassDeltaHeight(dataPart, parsedDataHeader, decode);
+  equal(deltaHeight.value, 6);
+  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(dataPart, parsedDataHeader, decode);
+  equal(deltaWidth.value, 6);
 });
 
 test('decodes symbols "a" and "c" from the tenth segment of Annex H example', function () {
@@ -413,12 +456,45 @@ test("data header of a symbol dictionary segment using Huffman encoding", functi
   equal(parsedDataHeader.encoding, JBIG2.HUFFMAN_ENCODING);
   equal(parsedDataHeader.useHuffman, true);
   equal(parsedDataHeader.useRefAgg, false);
-  equal(parsedDataHeader.huffmanTables.deltaWidth, "B.2");
-  equal(parsedDataHeader.huffmanTables.deltaHeight, "B.4");
-  equal(parsedDataHeader.huffmanTables.heightClassCollective, "B.1");
-  equal(parsedDataHeader.huffmanTables.aggregationSymbolInstanceCount, "B.1");
+  equal(parsedDataHeader.huffmanTables.deltaWidth, "B2");
+  equal(parsedDataHeader.huffmanTables.deltaHeight, "B4");
+  equal(parsedDataHeader.huffmanTables.heightClassCollective, "B1");
+  equal(parsedDataHeader.huffmanTables.aggregationSymbolInstanceCount, "B1");
   equal(parsedDataHeader.exportedSymbols, 2);
   equal(parsedDataHeader.definedSymbols, 2);
+});
+
+// Third segment in the Annex H example.
+test("delta height and width decoded using Huffman encoding", function () {
+  var dataPart = JBIG2.streamFrom(new Uint8Array([
+    0xE5, 0xCD, 0xF8, 0x00, 0x79, 0xE0, 0x84, 0x10, 0x81, 0xF0, 0x82, 0x10,
+    0x86, 0x10, 0x79, 0xF0, 0x00, 0x80
+  ]));
+
+  var parsedDataHeader = {
+     useHuffman: true,
+     useRefAgg: false,
+     inputSymbols: [],
+     definedSymbols: 2,
+     exportedSymbols: 2,
+     huffmanTables: {
+       deltaWidth: "B2",
+       deltaHeight: "B4",
+       heightClassCollective: "B1",
+       aggregationSymbolInstanceCount: "B1"
+     }
+  };
+
+  var decode = null; // arithmetic decoder not used here
+
+  var deltaHeight = JBIG2.decodeHeightClassDeltaHeight(dataPart, parsedDataHeader, decode);
+  equal(deltaHeight.value, 6);
+  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(dataPart, parsedDataHeader, decode);
+  equal(deltaWidth.value, 6);
+  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(dataPart, parsedDataHeader, decode);
+  equal(deltaWidth.value, 0);
+  var deltaWidth = JBIG2.decodeHeightClassDeltaWidth(dataPart, parsedDataHeader, decode);
+  equal(deltaWidth.isOOB, true);
 });
 
 
